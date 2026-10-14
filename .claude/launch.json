@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "master",
+      "runtimeExecutable": "go",
+      "runtimeArgs": ["run", "./cmd/master"],
+      "env": { "LISTEN_ADDR": "127.0.0.1:8083", "REPORTS_DIR": "./data/reports", "TRUSTED_PROXY_HOPS": "0" },
+      "port": 8083
+    }
+  ]
+}

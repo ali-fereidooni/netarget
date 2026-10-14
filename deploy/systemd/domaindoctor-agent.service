@@ -1,0 +1,28 @@
+[Unit]
+Description=Domain Doctor measurement agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=domaindoctor
+Group=domaindoctor
+EnvironmentFile=/etc/domaindoctor/agent.env
+ExecStart=/usr/local/bin/domaindoctor-agent
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+LockPersonality=yes
+# ping/traceroute need raw ICMP sockets
+AmbientCapabilities=CAP_NET_RAW
+CapabilityBoundingSet=CAP_NET_RAW
+
+[Install]
+WantedBy=multi-user.target

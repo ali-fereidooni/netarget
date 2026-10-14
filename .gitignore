@@ -1,0 +1,7 @@
+ref/
+*.exe
+/bin/
+/data/
+.env
+.claude/settings.local.json
+.taste-skill/

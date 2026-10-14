@@ -1,0 +1,6 @@
+{
+  "nodes": [
+    { "id": "agent1", "name": "Agent 1", "location": "compose", "url": "http://agent1:9090" },
+    { "id": "agent2", "name": "Agent 2", "location": "compose", "url": "http://agent2:9090" }
+  ]
+}

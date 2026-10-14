@@ -1,0 +1,55 @@
+# Example: one master + two agents.
+#   cp deploy/env/compose.env.example .env   # then set AGENT_SECRET=$(openssl rand -hex 32)
+#   docker compose up --build
+#   open http://127.0.0.1:8082
+#
+# The agents are only on the private "probes" network; their port 9090 is
+# never published. In a real deployment each agent runs on its own host in a
+# different region (see INSTALL.md) — two agents on one host only demonstrate
+# the fan-out.
+services:
+  master:
+    build: .
+    image: domaindoctor:latest
+    command: ["/usr/local/bin/master"]
+    environment:
+      LISTEN_ADDR: 0.0.0.0:8082
+      NODES_FILE: /etc/domaindoctor/nodes.json
+      AGENT_SECRET: ${AGENT_SECRET:?set AGENT_SECRET in .env}
+      LOCAL_AGENT: "0"
+      TRUSTED_PROXY_HOPS: "0"   # set to 1 when nginx runs in front
+      REPORTS_DIR: /data/reports
+    volumes:
+      - ./deploy/nodes.compose.json:/etc/domaindoctor/nodes.json:ro
+      - reports:/data/reports
+    ports:
+      - "127.0.0.1:8082:8082"
+    networks: [probes]
+    depends_on: [agent1, agent2]
+    restart: unless-stopped
+
+  agent1:
+    image: domaindoctor:latest
+    command: ["/usr/local/bin/agent"]
+    environment:
+      AGENT_LISTEN: 0.0.0.0:9090
+      AGENT_SECRET: ${AGENT_SECRET:?set AGENT_SECRET in .env}
+    cap_add: [NET_RAW]   # ICMP for ping/traceroute
+    networks: [probes]
+    restart: unless-stopped
+
+  agent2:
+    image: domaindoctor:latest
+    command: ["/usr/local/bin/agent"]
+    environment:
+      AGENT_LISTEN: 0.0.0.0:9090
+      AGENT_SECRET: ${AGENT_SECRET:?set AGENT_SECRET in .env}
+    cap_add: [NET_RAW]
+    networks: [probes]
+    restart: unless-stopped
+
+networks:
+  probes: {}
+
+volumes:
+  reports: {}

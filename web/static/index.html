@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en" dir="ltr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>Domain Doctor</title>
+<link rel="preload" href="/static/fonts/Vazirmatn-wght.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/static/style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%233288E5'/%3E%3Cpath d='M6 17h5l2.5-6 4 11 2.5-5H26' fill='none' stroke='%23020D13' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+</head>
+<body>
+<svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l2-5 4 11 2-6h6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></symbol>
+  <symbol id="i-id" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2"/><path d="M6 16c.7-1.3 1.8-2 3-2s2.3.7 3 2M14.5 10h4M14.5 13.5h3"/></symbol>
+  <symbol id="i-servers" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="6.5" rx="2"/><rect x="4" y="13.5" width="16" height="6.5" rx="2"/><path d="M8 7.25h.01M8 16.75h.01"/></symbol>
+  <symbol id="i-records" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+  <symbol id="i-radar" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12l5.5-5.5"/><circle cx="12" cy="12" r="1"/></symbol>
+  <symbol id="i-window" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="3"/><path d="M3 9h18M6.5 6.8h.01M9 6.8h.01"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12.3 2.7 2.7L16 9.7"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M10.3 4.4 2.9 17.3A2 2 0 0 0 4.6 20h14.8a2 2 0 0 0 1.7-2.7L13.7 4.4a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4M12 16.8h.01"/></symbol>
+  <symbol id="i-fail" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></symbol>
+  <symbol id="i-skip" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8h.01"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M7 4h10v16l-5-3.5L7 20z"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 20h14"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.5"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+</svg>
+
+<div class="app">
+  <aside class="rail" aria-label="Sidebar">
+    <a class="brand" href="/">
+      <span class="brand-mark"><svg class="icon"><use href="#i-pulse"/></svg></span>
+      <span class="brand-text"><strong>Domain Doctor</strong><small data-i18n="tagline">Domain troubleshooting</small></span>
+    </a>
+
+    <a class="new-check" href="/"><svg class="icon"><use href="#i-plus"/></svg><span data-i18n="newCheck">New check</span></a>
+
+    <section class="rail-section" aria-labelledby="recent-h">
+      <h2 id="recent-h" class="rail-h" data-i18n="recent">Recent checks</h2>
+      <ul id="recent" class="rail-list"></ul>
+      <p id="recent-empty" class="rail-empty" data-i18n="recentEmpty">Checks you run in this browser appear here.</p>
+    </section>
+
+    <section class="rail-section" aria-labelledby="nodes-h">
+      <h2 id="nodes-h" class="rail-h" data-i18n="nodes">Measurement nodes</h2>
+      <ul id="nodelist" class="rail-list nodes"></ul>
+    </section>
+
+    <div class="rail-foot">
+      <div class="seg" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="fa" aria-pressed="false" lang="fa">فا</button>
+      </div>
+      <button type="button" class="icon-btn" id="theme" aria-label="Switch theme">
+        <svg class="icon only-dark"><use href="#i-sun"/></svg><svg class="icon only-light"><use href="#i-moon"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <main class="main" id="main">
+    <header class="topbar">
+      <div class="topbar-title">
+        <h1 id="page-title" data-i18n="titleNew">Check a domain</h1>
+        <p id="page-sub" class="muted" data-i18n="subNew">Registration, name servers, DNS, reachability and the web server, in order.</p>
+      </div>
+      <div class="actions" id="actions" hidden>
+        <button type="button" class="btn ghost" id="copy"><svg class="icon"><use href="#i-link"/></svg><span data-i18n="copyLink">Copy link</span></button>
+        <button type="button" class="btn ghost" id="perma"><svg class="icon"><use href="#i-pin"/></svg><span data-i18n="permaLink">Permanent link</span></button>
+        <a class="btn ghost" id="exp-json" href="#" download><svg class="icon"><use href="#i-download"/></svg>JSON</a>
+        <a class="btn ghost" id="exp-md" href="#" download><svg class="icon"><use href="#i-download"/></svg>Markdown</a>
+      </div>
+    </header>
+
+    <form id="form" class="widget search" autocomplete="off">
+      <label for="domain" class="search-label" data-i18n="inputLabel">Domain or URL</label>
+      <div class="search-row">
+        <div class="field">
+          <svg class="icon field-icon"><use href="#i-globe"/></svg>
+          <input id="domain" name="domain" type="text" dir="ltr" placeholder="example.com" spellcheck="false" autocapitalize="off" required maxlength="2048">
+        </div>
+        <button id="go" type="submit" class="btn primary"><svg class="icon"><use href="#i-search"/></svg><span data-i18n="check">Check</span></button>
+      </div>
+      <p class="hint"><span data-i18n="try">Try:</span>
+        <button type="button" class="chip" data-example="example.com">example.com</button>
+        <button type="button" class="chip" data-example="expired.badssl.com">expired.badssl.com</button>
+        <button type="button" class="chip" data-example="dnssec-failed.org">dnssec-failed.org</button>
+      </p>
+    </form>
+
+    <p id="error" class="alert" role="alert" hidden></p>
+    <p id="banner" class="banner" role="status" hidden></p>
+
+    <section id="intro" class="intro" aria-labelledby="intro-h">
+      <h2 id="intro-h" data-i18n="introH">What gets checked</h2>
+      <ol class="intro-steps" id="intro-steps"></ol>
+    </section>
+
+    <section id="result" hidden>
+      <div class="result-head">
+        <h2 id="title" dir="ltr"></h2>
+        <p id="meta" class="muted"></p>
+      </div>
+      <ol class="pipeline" id="pipeline" aria-label="Check progress"></ol>
+      <section id="diagnosis" class="widget diagnosis" hidden aria-live="polite"></section>
+      <div id="cards" class="cards"></div>
+    </section>
+
+    <footer class="foot muted" data-i18n="footer">Copy Link keeps a result for 30 minutes; a Permanent link keeps it for 24 hours.</footer>
+  </main>
+</div>
+<script src="/static/app.js"></script>
+</body>
+</html>

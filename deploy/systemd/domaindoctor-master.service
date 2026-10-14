@@ -1,0 +1,32 @@
+[Unit]
+Description=Domain Doctor master (UI + API)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=domaindoctor
+Group=domaindoctor
+EnvironmentFile=/etc/domaindoctor/master.env
+ExecStart=/usr/local/bin/domaindoctor-master
+Restart=on-failure
+RestartSec=3
+StateDirectory=domaindoctor
+# Hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ReadWritePaths=/var/lib/domaindoctor
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+# Single-node mode (LOCAL_AGENT=1) pings from the master; allow ICMP sockets:
+AmbientCapabilities=CAP_NET_RAW
+CapabilityBoundingSet=CAP_NET_RAW
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,225 @@
+{
+  "request_id": "6c39dd3cc553ca66f86c88382628596d7ed025ec",
+  "domain": {
+    "input": "lame-shop.com",
+    "name": "lame-shop.com",
+    "unicode": "lame-shop.com",
+    "apex": "lame-shop.com"
+  },
+  "status": "done",
+  "started_at": "2026-10-14T20:46:38.38308Z",
+  "finished_at": "2026-10-14T20:46:38.7861708Z",
+  "nodes": [
+    {
+      "id": "fra1",
+      "name": "Frankfurt",
+      "location": "DE (demo)"
+    },
+    {
+      "id": "thr1",
+      "name": "Tehran",
+      "location": "IR (demo)"
+    }
+  ],
+  "layers": [
+    {
+      "layer": "registration",
+      "title": "Domain registration",
+      "status": "OK",
+      "summary": "Registered with Demo Registrar Ltd., 304 days left",
+      "findings": [
+        {
+          "code": "reg.ok",
+          "severity": "info",
+          "message": "Registered until 2027-08-15 (304 days left)."
+        }
+      ],
+      "details": {
+        "domain": "lame-shop.com",
+        "registered": true,
+        "info": {
+          "source": "rdap",
+          "server": "127.0.0.1:60158",
+          "registrar": "Demo Registrar Ltd.",
+          "created": "2026-08-15T20:46:38Z",
+          "expires": "2027-08-15T20:46:38Z",
+          "status": [
+            "active"
+          ]
+        },
+        "days_left": 304
+      },
+      "started_at": "2026-10-14T20:46:38.38308Z",
+      "duration_ms": 1
+    },
+    {
+      "layer": "nameservers",
+      "title": "Name servers",
+      "status": "FAIL",
+      "summary": "2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively",
+      "findings": [
+        {
+          "code": "ns.lame",
+          "severity": "fail",
+          "message": "ns1.lame-shop.com. is listed as a name server but is not authoritative for the domain (lame delegation).",
+          "evidence": "5.0.0.1: rcode=REFUSED aa=false"
+        },
+        {
+          "code": "ns.unreachable",
+          "severity": "fail",
+          "message": "ns2.lame-shop.com. does not answer DNS queries (timeout).",
+          "evidence": "5.0.1.1: timeout"
+        },
+        {
+          "code": "ns.none_usable",
+          "severity": "fail",
+          "message": "None of the delegated name servers answers authoritatively for the domain, so it cannot resolve anywhere."
+        }
+      ],
+      "details": {
+        "delegation": {
+          "parent": "com.",
+          "parent_server": "2.0.0.1",
+          "ns": [
+            "ns1.lame-shop.com.",
+            "ns2.lame-shop.com."
+          ],
+          "glue": {
+            "ns1.lame-shop.com.": [
+              "5.0.0.1"
+            ],
+            "ns2.lame-shop.com.": [
+              "5.0.1.1"
+            ]
+          },
+          "nxdomain": false,
+          "no_delegation": false,
+          "co_hosted": false
+        },
+        "servers": [
+          {
+            "name": "ns1.lame-shop.com.",
+            "in_bailiwick": true,
+            "glue": [
+              "5.0.0.1"
+            ],
+            "addrs": [
+              "5.0.0.1"
+            ],
+            "probes": [
+              {
+                "ip": "5.0.0.1",
+                "status": "lame",
+                "rcode": "REFUSED",
+                "aa": false,
+                "rtt_ms": 1
+              }
+            ]
+          },
+          {
+            "name": "ns2.lame-shop.com.",
+            "in_bailiwick": true,
+            "glue": [
+              "5.0.1.1"
+            ],
+            "addrs": [
+              "5.0.1.1"
+            ],
+            "probes": [
+              {
+                "ip": "5.0.1.1",
+                "status": "unreachable",
+                "aa": false,
+                "error": "timeout"
+              }
+            ]
+          }
+        ]
+      },
+      "started_at": "2026-10-14T20:46:38.3850491Z",
+      "duration_ms": 401
+    },
+    {
+      "layer": "zone",
+      "title": "DNS zone",
+      "status": "SKIPPED",
+      "summary": "Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)",
+      "findings": [],
+      "started_at": "2026-10-14T20:46:38.7861708Z",
+      "duration_ms": 0,
+      "skip_reason": "Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)"
+    },
+    {
+      "layer": "reachability",
+      "title": "Reachability",
+      "status": "SKIPPED",
+      "summary": "Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)",
+      "findings": [],
+      "started_at": "2026-10-14T20:46:38.7861708Z",
+      "duration_ms": 0,
+      "skip_reason": "Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)"
+    },
+    {
+      "layer": "web",
+      "title": "Web server",
+      "status": "SKIPPED",
+      "summary": "Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)",
+      "findings": [],
+      "started_at": "2026-10-14T20:46:38.7861708Z",
+      "duration_ms": 0,
+      "skip_reason": "Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)"
+    }
+  ],
+  "diagnosis": {
+    "healthy": false,
+    "headline": "None of the domain's name servers answer for it",
+    "root_cause": {
+      "code": "ns.none_usable",
+      "layer": "nameservers",
+      "title": "None of the domain's name servers answer for it",
+      "explanation": "None of the delegated name servers answers authoritatively for the domain, so it cannot resolve anywhere."
+    },
+    "other_causes": [],
+    "symptoms": [
+      {
+        "code": "ns.lame",
+        "layer": "nameservers",
+        "message": "ns1.lame-shop.com. is listed as a name server but is not authoritative for the domain (lame delegation).",
+        "explained_by": "ns.none_usable"
+      },
+      {
+        "code": "ns.unreachable",
+        "layer": "nameservers",
+        "message": "ns2.lame-shop.com. does not answer DNS queries (timeout).",
+        "explained_by": "ns.none_usable"
+      },
+      {
+        "code": "skipped",
+        "layer": "zone",
+        "message": "DNS zone was not checked: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)",
+        "explained_by": "ns.none_usable"
+      },
+      {
+        "code": "skipped",
+        "layer": "reachability",
+        "message": "Reachability was not checked: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)",
+        "explained_by": "ns.none_usable"
+      },
+      {
+        "code": "skipped",
+        "layer": "web",
+        "message": "Web server was not checked: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)",
+        "explained_by": "ns.none_usable"
+      }
+    ],
+    "fixes": [
+      {
+        "priority": 1,
+        "title": "None of the domain's name servers answer for it",
+        "action": "Add the zone at your DNS provider so the listed name servers answer authoritatively, or change the name servers at the registrar to the ones that actually host the zone.",
+        "code": "ns.none_usable",
+        "layer": "nameservers"
+      }
+    ]
+  }
+}

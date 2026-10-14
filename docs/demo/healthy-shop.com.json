@@ -1,0 +1,741 @@
+{
+  "request_id": "8566f084df20d76362c753f88e056648e1fd4320",
+  "domain": {
+    "input": "healthy-shop.com",
+    "name": "healthy-shop.com",
+    "unicode": "healthy-shop.com",
+    "apex": "healthy-shop.com"
+  },
+  "status": "done",
+  "started_at": "2026-10-14T20:46:38.3436541Z",
+  "finished_at": "2026-10-14T20:46:38.3773863Z",
+  "nodes": [
+    {
+      "id": "fra1",
+      "name": "Frankfurt",
+      "location": "DE (demo)"
+    },
+    {
+      "id": "thr1",
+      "name": "Tehran",
+      "location": "IR (demo)"
+    }
+  ],
+  "layers": [
+    {
+      "layer": "registration",
+      "title": "Domain registration",
+      "status": "OK",
+      "summary": "Registered with Demo Registrar Ltd., 209 days left",
+      "findings": [
+        {
+          "code": "reg.ok",
+          "severity": "info",
+          "message": "Registered until 2027-05-12 (209 days left)."
+        }
+      ],
+      "details": {
+        "domain": "healthy-shop.com",
+        "registered": true,
+        "info": {
+          "source": "rdap",
+          "server": "127.0.0.1:60158",
+          "registrar": "Demo Registrar Ltd.",
+          "created": "2024-04-27T20:46:38Z",
+          "expires": "2027-05-12T20:46:38Z",
+          "status": [
+            "clientTransferProhibited"
+          ]
+        },
+        "days_left": 209
+      },
+      "started_at": "2026-10-14T20:46:38.3436541Z",
+      "duration_ms": 3
+    },
+    {
+      "layer": "nameservers",
+      "title": "Name servers",
+      "status": "OK",
+      "summary": "2 name server(s) delegated by com, 2 of 2 addresses answer authoritatively",
+      "findings": [],
+      "details": {
+        "delegation": {
+          "parent": "com.",
+          "parent_server": "2.0.0.1",
+          "ns": [
+            "ns1.healthy-shop.com.",
+            "ns2.dns-host.net."
+          ],
+          "glue": {
+            "ns1.healthy-shop.com.": [
+              "3.0.0.1"
+            ]
+          },
+          "nxdomain": false,
+          "no_delegation": false,
+          "co_hosted": false
+        },
+        "servers": [
+          {
+            "name": "ns1.healthy-shop.com.",
+            "in_bailiwick": true,
+            "glue": [
+              "3.0.0.1"
+            ],
+            "addrs": [
+              "3.0.0.1"
+            ],
+            "probes": [
+              {
+                "ip": "3.0.0.1",
+                "status": "ok",
+                "rcode": "NOERROR",
+                "aa": true,
+                "serial": 2026101401,
+                "ns": [
+                  "ns1.healthy-shop.com.",
+                  "ns2.dns-host.net."
+                ]
+              }
+            ]
+          },
+          {
+            "name": "ns2.dns-host.net.",
+            "in_bailiwick": false,
+            "addrs": [
+              "3.0.2.1"
+            ],
+            "probes": [
+              {
+                "ip": "3.0.2.1",
+                "status": "ok",
+                "rcode": "NOERROR",
+                "aa": true,
+                "serial": 2026101401,
+                "ns": [
+                  "ns1.healthy-shop.com.",
+                  "ns2.dns-host.net."
+                ]
+              }
+            ]
+          }
+        ],
+        "child_ns": [
+          "ns1.healthy-shop.com.",
+          "ns2.dns-host.net."
+        ]
+      },
+      "started_at": "2026-10-14T20:46:38.3467539Z",
+      "duration_ms": 3
+    },
+    {
+      "layer": "zone",
+      "title": "DNS zone",
+      "status": "OK",
+      "summary": "8 records from ns1.healthy-shop.com. (3.0.0.1)",
+      "findings": [
+        {
+          "code": "dns.no_ipv6",
+          "severity": "info",
+          "message": "No AAAA (IPv6) record."
+        },
+        {
+          "code": "dnssec.valid",
+          "severity": "info",
+          "message": "DNSSEC chain DS → DNSKEY → RRSIG validates.",
+          "evidence": "parent publishes 1 DS record(s); DS matches DNSKEY 23155; DNSKEY RRset signed by 23155: valid; SOA signed by 23155: valid"
+        }
+      ],
+      "details": {
+        "queried_server": "ns1.healthy-shop.com. (3.0.0.1)",
+        "records": [
+          {
+            "name": "healthy-shop.com",
+            "type": "A",
+            "ttl": 300,
+            "value": "127.0.0.1"
+          },
+          {
+            "name": "healthy-shop.com",
+            "type": "CAA",
+            "ttl": 3600,
+            "value": "0 issue \"letsencrypt.org\""
+          },
+          {
+            "name": "healthy-shop.com",
+            "type": "MX",
+            "ttl": 3600,
+            "value": "10 mail.healthy-shop.com."
+          },
+          {
+            "name": "healthy-shop.com",
+            "type": "NS",
+            "ttl": 3600,
+            "value": "ns1.healthy-shop.com."
+          },
+          {
+            "name": "healthy-shop.com",
+            "type": "NS",
+            "ttl": 3600,
+            "value": "ns2.dns-host.net."
+          },
+          {
+            "name": "healthy-shop.com",
+            "type": "SOA",
+            "ttl": 3600,
+            "value": "ns1.dns-host.net. hostmaster.healthy-shop.com. 2026101401 7200 3600 1209600 300"
+          },
+          {
+            "name": "healthy-shop.com",
+            "type": "TXT",
+            "ttl": 3600,
+            "value": "\"v=spf1 mx include:_spf.mailer.net -all\""
+          },
+          {
+            "name": "www.healthy-shop.com",
+            "type": "CNAME",
+            "ttl": 300,
+            "value": "healthy-shop.com."
+          }
+        ],
+        "email": {
+          "spf": {
+            "record": "v=spf1 mx include:_spf.mailer.net -all",
+            "records": 1,
+            "lookups": 2,
+            "all": "-",
+            "includes": [
+              "_spf.mailer.net"
+            ]
+          },
+          "dmarc": {
+            "record": "v=DMARC1; p=reject; rua=mailto:dmarc@healthy-shop.com",
+            "policy": "reject"
+          },
+          "dkim_selectors_found": [
+            "selector1"
+          ]
+        },
+        "dnssec": {
+          "signed": true,
+          "ds": [
+            "23155 ECDSAP256SHA256 2"
+          ],
+          "dnskeys": [
+            "23155 flags=257 ECDSAP256SHA256"
+          ],
+          "matched_ksk": 23155,
+          "chain": [
+            "parent publishes 1 DS record(s)",
+            "DS matches DNSKEY 23155",
+            "DNSKEY RRset signed by 23155: valid",
+            "SOA signed by 23155: valid"
+          ],
+          "valid": true
+        },
+        "propagation": [
+          {
+            "type": "A",
+            "name": "healthy-shop.com",
+            "authoritative": [
+              "127.0.0.1"
+            ],
+            "values": [
+              {
+                "value": "127.0.0.1",
+                "count": 1,
+                "resolvers": [
+                  "Cloudflare (mock)"
+                ]
+              }
+            ],
+            "consistent": true
+          },
+          {
+            "type": "AAAA",
+            "name": "healthy-shop.com",
+            "authoritative": null,
+            "values": [
+              {
+                "value": "(empty)",
+                "count": 1,
+                "resolvers": [
+                  "Cloudflare (mock)"
+                ]
+              }
+            ],
+            "consistent": true
+          },
+          {
+            "type": "MX",
+            "name": "healthy-shop.com",
+            "authoritative": [
+              "10 mail.healthy-shop.com."
+            ],
+            "values": [
+              {
+                "value": "10 mail.healthy-shop.com.",
+                "count": 1,
+                "resolvers": [
+                  "Cloudflare (mock)"
+                ]
+              }
+            ],
+            "consistent": true
+          },
+          {
+            "type": "NS",
+            "name": "healthy-shop.com",
+            "authoritative": [
+              "ns1.healthy-shop.com.",
+              "ns2.dns-host.net."
+            ],
+            "values": [
+              {
+                "value": "ns1.healthy-shop.com.",
+                "count": 1,
+                "resolvers": [
+                  "Cloudflare (mock)"
+                ]
+              },
+              {
+                "value": "ns2.dns-host.net.",
+                "count": 1,
+                "resolvers": [
+                  "Cloudflare (mock)"
+                ]
+              }
+            ],
+            "consistent": true
+          }
+        ]
+      },
+      "started_at": "2026-10-14T20:46:38.3509318Z",
+      "duration_ms": 11
+    },
+    {
+      "layer": "reachability",
+      "title": "Reachability",
+      "status": "OK",
+      "summary": "Reachable from 2 of 2 node(s)",
+      "findings": [],
+      "details": {
+        "targets": [
+          "127.0.0.1"
+        ],
+        "rows": [
+          {
+            "node_id": "fra1",
+            "node": "Frankfurt",
+            "location": "DE (demo)",
+            "ip": "127.0.0.1",
+            "family": "IPv4",
+            "sent": 4,
+            "received": 4,
+            "loss": 0,
+            "rtt_min": 0.04,
+            "rtt_avg": 0.05,
+            "rtt_max": 0.07,
+            "tcp_80": "open",
+            "tcp_443": "open",
+            "status": "ok"
+          },
+          {
+            "node_id": "thr1",
+            "node": "Tehran",
+            "location": "IR (demo)",
+            "ip": "127.0.0.1",
+            "family": "IPv4",
+            "sent": 4,
+            "received": 4,
+            "loss": 0,
+            "rtt_min": 0.04,
+            "rtt_avg": 0.05,
+            "rtt_max": 0.07,
+            "tcp_80": "open",
+            "tcp_443": "open",
+            "status": "ok"
+          }
+        ]
+      },
+      "started_at": "2026-10-14T20:46:38.3619515Z",
+      "duration_ms": 2
+    },
+    {
+      "layer": "web",
+      "title": "Web server",
+      "status": "OK",
+      "summary": "https://healthy-shop.com/ → 200 OK in 6 ms (from Frankfurt)",
+      "findings": [],
+      "details": {
+        "primary_node": "Frankfurt",
+        "chains": [
+          {
+            "start": "http://healthy-shop.com/",
+            "hops": [
+              {
+                "url": "http://healthy-shop.com/",
+                "ip": "127.0.0.1",
+                "status": 301,
+                "status_text": "Moved Permanently",
+                "location": "https://healthy-shop.com/",
+                "headers": {
+                  "Content-Type": "text/html; charset=utf-8"
+                },
+                "timing": {
+                  "dns_ms": 0,
+                  "connect_ms": 0,
+                  "tls_ms": 0,
+                  "ttfb_ms": 0,
+                  "total_ms": 2.933
+                }
+              },
+              {
+                "url": "https://healthy-shop.com/",
+                "ip": "127.0.0.1",
+                "status": 200,
+                "status_text": "OK",
+                "server": "nginx",
+                "headers": {
+                  "Content-Security-Policy": "default-src 'self'; frame-ancestors 'none'",
+                  "Content-Type": "text/html; charset=utf-8",
+                  "Referrer-Policy": "strict-origin-when-cross-origin",
+                  "Server": "nginx",
+                  "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
+                  "X-Content-Type-Options": "nosniff"
+                },
+                "timing": {
+                  "dns_ms": 0,
+                  "connect_ms": 0,
+                  "tls_ms": 7.133,
+                  "ttfb_ms": 8.546,
+                  "total_ms": 8.546
+                },
+                "tls": {
+                  "version": "TLS 1.3",
+                  "cipher": "TLS_AES_128_GCM_SHA256",
+                  "subject": "healthy-shop.com",
+                  "issuer": "Domain Doctor Demo CA",
+                  "not_before": "2026-09-14T20:46:38Z",
+                  "not_after": "2026-12-13T20:46:38Z",
+                  "days_left": 59,
+                  "sans": [
+                    "healthy-shop.com",
+                    "www.healthy-shop.com"
+                  ],
+                  "hostname_match": true,
+                  "chain_valid": true,
+                  "chain_length": 2
+                }
+              }
+            ]
+          },
+          {
+            "start": "https://healthy-shop.com/",
+            "hops": [
+              {
+                "url": "https://healthy-shop.com/",
+                "ip": "127.0.0.1",
+                "status": 200,
+                "status_text": "OK",
+                "server": "nginx",
+                "headers": {
+                  "Content-Security-Policy": "default-src 'self'; frame-ancestors 'none'",
+                  "Content-Type": "text/html; charset=utf-8",
+                  "Referrer-Policy": "strict-origin-when-cross-origin",
+                  "Server": "nginx",
+                  "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
+                  "X-Content-Type-Options": "nosniff"
+                },
+                "timing": {
+                  "dns_ms": 0,
+                  "connect_ms": 0,
+                  "tls_ms": 4.346,
+                  "ttfb_ms": 4.346,
+                  "total_ms": 5.801
+                },
+                "tls": {
+                  "version": "TLS 1.3",
+                  "cipher": "TLS_AES_128_GCM_SHA256",
+                  "subject": "healthy-shop.com",
+                  "issuer": "Domain Doctor Demo CA",
+                  "not_before": "2026-09-14T20:46:38Z",
+                  "not_after": "2026-12-13T20:46:38Z",
+                  "days_left": 59,
+                  "sans": [
+                    "healthy-shop.com",
+                    "www.healthy-shop.com"
+                  ],
+                  "hostname_match": true,
+                  "chain_valid": true,
+                  "chain_length": 2
+                }
+              }
+            ]
+          },
+          {
+            "start": "http://www.healthy-shop.com/",
+            "hops": [
+              {
+                "url": "http://www.healthy-shop.com/",
+                "ip": "127.0.0.1",
+                "status": 301,
+                "status_text": "Moved Permanently",
+                "location": "https://healthy-shop.com/",
+                "headers": {
+                  "Content-Type": "text/html; charset=utf-8"
+                },
+                "timing": {
+                  "dns_ms": 0,
+                  "connect_ms": 0,
+                  "tls_ms": 0,
+                  "ttfb_ms": 3.302,
+                  "total_ms": 3.806
+                }
+              },
+              {
+                "url": "https://healthy-shop.com/",
+                "ip": "127.0.0.1",
+                "status": 200,
+                "status_text": "OK",
+                "server": "nginx",
+                "headers": {
+                  "Content-Security-Policy": "default-src 'self'; frame-ancestors 'none'",
+                  "Content-Type": "text/html; charset=utf-8",
+                  "Referrer-Policy": "strict-origin-when-cross-origin",
+                  "Server": "nginx",
+                  "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
+                  "X-Content-Type-Options": "nosniff"
+                },
+                "timing": {
+                  "dns_ms": 0,
+                  "connect_ms": 0.54,
+                  "tls_ms": 5.845,
+                  "ttfb_ms": 6.891,
+                  "total_ms": 6.891
+                },
+                "tls": {
+                  "version": "TLS 1.3",
+                  "cipher": "TLS_AES_128_GCM_SHA256",
+                  "subject": "healthy-shop.com",
+                  "issuer": "Domain Doctor Demo CA",
+                  "not_before": "2026-09-14T20:46:38Z",
+                  "not_after": "2026-12-13T20:46:38Z",
+                  "days_left": 59,
+                  "sans": [
+                    "healthy-shop.com",
+                    "www.healthy-shop.com"
+                  ],
+                  "hostname_match": true,
+                  "chain_valid": true,
+                  "chain_length": 2
+                }
+              }
+            ]
+          },
+          {
+            "start": "https://www.healthy-shop.com/",
+            "hops": [
+              {
+                "url": "https://www.healthy-shop.com/",
+                "ip": "127.0.0.1",
+                "status": 301,
+                "status_text": "Moved Permanently",
+                "location": "https://healthy-shop.com/",
+                "headers": {
+                  "Content-Type": "text/html; charset=utf-8"
+                },
+                "timing": {
+                  "dns_ms": 0,
+                  "connect_ms": 0.517,
+                  "tls_ms": 6.527,
+                  "ttfb_ms": 7.044,
+                  "total_ms": 7.044
+                },
+                "tls": {
+                  "version": "TLS 1.3",
+                  "cipher": "TLS_AES_128_GCM_SHA256",
+                  "subject": "healthy-shop.com",
+                  "issuer": "Domain Doctor Demo CA",
+                  "not_before": "2026-09-14T20:46:38Z",
+                  "not_after": "2026-12-13T20:46:38Z",
+                  "days_left": 59,
+                  "sans": [
+                    "healthy-shop.com",
+                    "www.healthy-shop.com"
+                  ],
+                  "hostname_match": true,
+                  "chain_valid": true,
+                  "chain_length": 2
+                }
+              },
+              {
+                "url": "https://healthy-shop.com/",
+                "ip": "127.0.0.1",
+                "status": 200,
+                "status_text": "OK",
+                "server": "nginx",
+                "headers": {
+                  "Content-Security-Policy": "default-src 'self'; frame-ancestors 'none'",
+                  "Content-Type": "text/html; charset=utf-8",
+                  "Referrer-Policy": "strict-origin-when-cross-origin",
+                  "Server": "nginx",
+                  "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
+                  "X-Content-Type-Options": "nosniff"
+                },
+                "timing": {
+                  "dns_ms": 0,
+                  "connect_ms": 0,
+                  "tls_ms": 3.304,
+                  "ttfb_ms": 4.952,
+                  "total_ms": 4.952
+                },
+                "tls": {
+                  "version": "TLS 1.3",
+                  "cipher": "TLS_AES_128_GCM_SHA256",
+                  "subject": "healthy-shop.com",
+                  "issuer": "Domain Doctor Demo CA",
+                  "not_before": "2026-09-14T20:46:38Z",
+                  "not_after": "2026-12-13T20:46:38Z",
+                  "days_left": 59,
+                  "sans": [
+                    "healthy-shop.com",
+                    "www.healthy-shop.com"
+                  ],
+                  "hostname_match": true,
+                  "chain_valid": true,
+                  "chain_length": 2
+                }
+              }
+            ]
+          }
+        ],
+        "nodes": [
+          {
+            "node": "Frankfurt",
+            "location": "DE (demo)",
+            "url": "http://healthy-shop.com/",
+            "final_url": "https://healthy-shop.com/",
+            "status": 200,
+            "hops": 2,
+            "total_ms": 11.479,
+            "ok": true
+          },
+          {
+            "node": "Frankfurt",
+            "location": "DE (demo)",
+            "url": "https://healthy-shop.com/",
+            "final_url": "https://healthy-shop.com/",
+            "status": 200,
+            "hops": 1,
+            "total_ms": 5.801,
+            "ok": true
+          },
+          {
+            "node": "Frankfurt",
+            "location": "DE (demo)",
+            "url": "http://www.healthy-shop.com/",
+            "final_url": "https://healthy-shop.com/",
+            "status": 200,
+            "hops": 2,
+            "total_ms": 10.697,
+            "ok": true
+          },
+          {
+            "node": "Frankfurt",
+            "location": "DE (demo)",
+            "url": "https://www.healthy-shop.com/",
+            "final_url": "https://healthy-shop.com/",
+            "status": 200,
+            "hops": 2,
+            "total_ms": 11.995999999999999,
+            "ok": true
+          },
+          {
+            "node": "Tehran",
+            "location": "IR (demo)",
+            "url": "http://healthy-shop.com/",
+            "final_url": "https://healthy-shop.com/",
+            "status": 200,
+            "hops": 2,
+            "total_ms": 9.690999999999999,
+            "ok": true
+          },
+          {
+            "node": "Tehran",
+            "location": "IR (demo)",
+            "url": "https://healthy-shop.com/",
+            "final_url": "https://healthy-shop.com/",
+            "status": 200,
+            "hops": 1,
+            "total_ms": 10.347,
+            "ok": true
+          },
+          {
+            "node": "Tehran",
+            "location": "IR (demo)",
+            "url": "http://www.healthy-shop.com/",
+            "final_url": "https://healthy-shop.com/",
+            "status": 200,
+            "hops": 2,
+            "total_ms": 10.697,
+            "ok": true
+          },
+          {
+            "node": "Tehran",
+            "location": "IR (demo)",
+            "url": "https://www.healthy-shop.com/",
+            "final_url": "https://healthy-shop.com/",
+            "status": 200,
+            "hops": 2,
+            "total_ms": 9.690000000000001,
+            "ok": true
+          }
+        ],
+        "tls": {
+          "healthy-shop.com": {
+            "version": "TLS 1.3",
+            "cipher": "TLS_AES_128_GCM_SHA256",
+            "subject": "healthy-shop.com",
+            "issuer": "Domain Doctor Demo CA",
+            "not_before": "2026-09-14T20:46:38Z",
+            "not_after": "2026-12-13T20:46:38Z",
+            "days_left": 59,
+            "sans": [
+              "healthy-shop.com",
+              "www.healthy-shop.com"
+            ],
+            "hostname_match": true,
+            "chain_valid": true,
+            "chain_length": 2
+          },
+          "www.healthy-shop.com": {
+            "version": "TLS 1.3",
+            "cipher": "TLS_AES_128_GCM_SHA256",
+            "subject": "healthy-shop.com",
+            "issuer": "Domain Doctor Demo CA",
+            "not_before": "2026-09-14T20:46:38Z",
+            "not_after": "2026-12-13T20:46:38Z",
+            "days_left": 59,
+            "sans": [
+              "healthy-shop.com",
+              "www.healthy-shop.com"
+            ],
+            "hostname_match": true,
+            "chain_valid": true,
+            "chain_length": 2
+          }
+        }
+      },
+      "started_at": "2026-10-14T20:46:38.3642509Z",
+      "duration_ms": 13
+    }
+  ],
+  "diagnosis": {
+    "healthy": true,
+    "headline": "No problems found: the domain is registered, delegated, resolves, and the website responds.",
+    "other_causes": [],
+    "symptoms": [],
+    "fixes": []
+  }
+}
