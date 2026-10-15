@@ -32,7 +32,7 @@ var scenarios = []expectation{
 	{"healthy-shop.com", []checks.Status{checks.OK, checks.OK, checks.OK, checks.OK, checks.OK}, "", []string{"dnssec.valid"}},
 	{"https://WWW.Expired-Shop.com/cart", []checks.Status{checks.FAIL, checks.FAIL, checks.SKIPPED, checks.SKIPPED, checks.SKIPPED}, "reg.expired", []string{"ns.lame", "ns.none_usable"}},
 	{"lame-shop.com", []checks.Status{checks.OK, checks.FAIL, checks.SKIPPED, checks.SKIPPED, checks.SKIPPED}, "ns.none_usable", []string{"ns.lame", "ns.unreachable"}},
-	{"broken-web.com", []checks.Status{checks.OK, checks.OK, checks.OK, checks.OK, checks.FAIL}, "tls.expired", []string{"web.5xx", "dnssec.unsigned"}},
+	{"broken-web.com", []checks.Status{checks.OK, checks.OK, checks.OK, checks.OK, checks.FAIL}, "load.tls.expired", []string{"load.http.502.origin", "dnssec.unsigned"}},
 }
 
 // TestDemo runs every scenario end to end. With DEMO_WRITE=1 it writes the

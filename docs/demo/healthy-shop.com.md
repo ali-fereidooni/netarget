@@ -1,7 +1,7 @@
 # Domain Doctor report: healthy-shop.com
 
-- Checked: 2026-10-14 20:46:38 UTC
-- Request ID: `8566f084df20d76362c753f88e056648e1fd4320`
+- Checked: 2026-10-15 01:28:05 UTC
+- Request ID: `e454bb075757f22f7e6488babec38d6cdcf22eb1`
 - Measurement nodes: Frankfurt (DE (demo)), Tehran (IR (demo))
 
 ## Diagnosis
@@ -17,11 +17,11 @@
 | Name servers | ✅ OK | 2 name server(s) delegated by com, 2 of 2 addresses answer authoritatively |
 | DNS zone | ✅ OK | 8 records from ns1.healthy-shop.com. (3.0.0.1) |
 | Reachability | ✅ OK | Reachable from 2 of 2 node(s) |
-| Web server | ✅ OK | https://healthy-shop.com/ → 200 OK in 6 ms (from Frankfurt) |
+| Website load | ✅ OK | https://healthy-shop.com/ → 200 in 7 ms — The website loads normally from every measurement node |
 
 ### ✅ Domain registration — OK
 
-- **INFO** `reg.ok` Registered until 2027-05-12 (209 days left).
+- **INFO** `reg.ok` Registered until 2027-05-13 (209 days left).
 
 ### ✅ Name servers — OK
 
@@ -34,7 +34,7 @@
 ### ✅ DNS zone — OK
 
 - **INFO** `dns.no_ipv6` No AAAA (IPv6) record.
-- **INFO** `dnssec.valid` DNSSEC chain DS → DNSKEY → RRSIG validates. (`parent publishes 1 DS record(s); DS matches DNSKEY 23155; DNSKEY RRset signed by 23155: valid; SOA signed by 23155: valid`)
+- **INFO** `dnssec.valid` DNSSEC chain DS → DNSKEY → RRSIG validates. (`parent publishes 1 DS record(s); DS matches DNSKEY 23689; DNSKEY RRset signed by 23689: valid; SOA signed by 23689: valid`)
 
 | Name | Type | TTL | Value |
 |---|---|---|---|
@@ -55,35 +55,49 @@
 | Frankfurt | 127.0.0.1 | 4 | 4 | 0% | 0.0/0.1/0.1 | open | open | ok |
 | Tehran | 127.0.0.1 | 4 | 4 | 0% | 0.0/0.1/0.1 | open | open | ok |
 
-### ✅ Web server — OK
+### ✅ Website load — OK
 
+- **INFO** `load.content.no-http2` The server only speaks HTTP/1.1; HTTP/2 would load pages with many resources faster (`the server negotiated HTTP/1.1 when HTTP/2 was offered`)
 
-`http://healthy-shop.com/`
+**Verdict:** The website loads normally from every measurement node
 
-- http://healthy-shop.com/ → 301 Moved Permanently (3 ms) Location: https://healthy-shop.com/
-- https://healthy-shop.com/ → 200 OK (9 ms)
+- Layer at fault: **none** (confidence high, 90%)
 
-`https://healthy-shop.com/`
+Evidence:
 
-- https://healthy-shop.com/ → 200 OK (6 ms)
+- `GET https://healthy-shop.com/ → 200`
 
-`http://www.healthy-shop.com/`
+Could not determine from outside:
 
-- http://www.healthy-shop.com/ → 301 Moved Permanently (4 ms) Location: https://healthy-shop.com/
-- https://healthy-shop.com/ → 200 OK (7 ms)
+- Problems that only appear for logged-in users, specific pages or after JavaScript runs.
 
-`https://www.healthy-shop.com/`
+| Kind | Detected | Confidence | Evidence |
+|---|---|---|---|
+| server | nginx | medium | header server: nginx (GET https://healthy-shop.com/) |
 
-- https://www.healthy-shop.com/ → 301 Moved Permanently (7 ms) Location: https://healthy-shop.com/
-- https://healthy-shop.com/ → 200 OK (5 ms)
+| Node | Request | Final | Result | Proto | TTFB ms | Total ms | Differs |
+|---|---|---|---|---|---|---|---|
+| Frankfurt | GET https://healthy-shop.com/ | https://healthy-shop.com/ | 200 | HTTP/1.1 | 6 | 7 |  |
+| Frankfurt | GET http://healthy-shop.com/ | https://healthy-shop.com/ | 200 | HTTP/1.1 | 7 | 7 |  |
+| Frankfurt | GET https://www.healthy-shop.com/ | https://healthy-shop.com/ | 200 | HTTP/1.1 | 7 | 8 |  |
+| Frankfurt | GET http://www.healthy-shop.com/ | https://healthy-shop.com/ | 200 | HTTP/1.1 | 7 | 7 |  |
+| Frankfurt | HEAD https://healthy-shop.com/ | https://healthy-shop.com/ | 200 | HTTP/1.1 | 8 | 9 |  |
+| Frankfurt | GET https://healthy-shop.com/ curl UA | https://healthy-shop.com/ | 200 | HTTP/1.1 | 6 | 9 |  |
+| Frankfurt | GET https://healthy-shop.com/ googlebot UA | https://healthy-shop.com/ | 200 | HTTP/1.1 | 7 | 7 |  |
+| Frankfurt | GET https://healthy-shop.com/ HTTP/1.1 | https://healthy-shop.com/ | 200 | HTTP/1.1 | 9 | 10 |  |
+| Frankfurt | GET https://healthy-shop.com/ HTTP/2 | https://healthy-shop.com/ | 200 | HTTP/1.1 | 9 | 9 |  |
+| Frankfurt | GET https://healthy-shop.com/ gzip | https://healthy-shop.com/ | 200 | HTTP/1.1 | 12 | 12 |  |
+| Frankfurt | GET https://healthy-shop.com/ no compression | https://healthy-shop.com/ | 200 | HTTP/1.1 | 15 | 16 |  |
+| Tehran | GET https://healthy-shop.com/ | https://healthy-shop.com/ | 200 | HTTP/1.1 | 7 | 7 |  |
+| Tehran | GET http://healthy-shop.com/ | https://healthy-shop.com/ | 200 | HTTP/1.1 | 6 | 6 |  |
+| Tehran | GET https://www.healthy-shop.com/ | https://healthy-shop.com/ | 200 | HTTP/1.1 | 3 | 3 |  |
+| Tehran | GET http://www.healthy-shop.com/ | https://healthy-shop.com/ | 200 | HTTP/1.1 | 4 | 4 |  |
+| Tehran | HEAD https://healthy-shop.com/ | https://healthy-shop.com/ | 200 | HTTP/1.1 | 15 | 16 |  |
+| Tehran | GET https://healthy-shop.com/ curl UA | https://healthy-shop.com/ | 200 | HTTP/1.1 | 11 | 13 |  |
+| Tehran | GET https://healthy-shop.com/ googlebot UA | https://healthy-shop.com/ | 200 | HTTP/1.1 | 5 | 7 |  |
+| Tehran | GET https://healthy-shop.com/ HTTP/1.1 | https://healthy-shop.com/ | 200 | HTTP/1.1 | 11 | 13 |  |
+| Tehran | GET https://healthy-shop.com/ HTTP/2 | https://healthy-shop.com/ | 200 | HTTP/1.1 | 8 | 10 |  |
+| Tehran | GET https://healthy-shop.com/ gzip | https://healthy-shop.com/ | 200 | HTTP/1.1 | 15 | 17 |  |
+| Tehran | GET https://healthy-shop.com/ no compression | https://healthy-shop.com/ | 200 | HTTP/1.1 | 10 | 10 |  |
 
-| Node | URL | Final | Status | Total ms |
-|---|---|---|---|---|
-| Frankfurt | http://healthy-shop.com/ | https://healthy-shop.com/ | 200 | 11 |
-| Frankfurt | https://healthy-shop.com/ | https://healthy-shop.com/ | 200 | 6 |
-| Frankfurt | http://www.healthy-shop.com/ | https://healthy-shop.com/ | 200 | 11 |
-| Frankfurt | https://www.healthy-shop.com/ | https://healthy-shop.com/ | 200 | 12 |
-| Tehran | http://healthy-shop.com/ | https://healthy-shop.com/ | 200 | 10 |
-| Tehran | https://healthy-shop.com/ | https://healthy-shop.com/ | 200 | 10 |
-| Tehran | http://www.healthy-shop.com/ | https://healthy-shop.com/ | 200 | 11 |
-| Tehran | https://www.healthy-shop.com/ | https://healthy-shop.com/ | 200 | 10 |
+- Also: **HTTP/2 not available** — The server only speaks HTTP/1.1; HTTP/2 would load pages with many resources faster (info, high)

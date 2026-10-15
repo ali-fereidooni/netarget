@@ -1,0 +1,333 @@
+# Page content and performance: subresources, mixed content, MIME, compression,
+# caching, CORS, TTFB, size and security headers.
+
+- id: content.mixed
+  title: Mixed content (HTTP resources on an HTTPS page)
+  layer: content
+  severity: warn
+  match:
+    all:
+      - signal: res_mixed_content
+  confidence: {base: 0.9}
+  verdict: "The HTTPS page loads resources over plain HTTP; browsers block scripts/styles and mark the page as not secure"
+  causes:
+    - {text: "Hard-coded http:// URLs in templates, content or the database (common after moving to HTTPS).", likelihood: high}
+  fixes:
+    - step: "Change the resource URLs to https:// (or protocol-relative/relative URLs)."
+      snippets:
+        wordpress: "wp db export before-https.sql   # backup first\nwp search-replace 'http://{host}' 'https://{host}' --all-tables --dry-run\n# then without --dry-run"
+      verify: "The resource table shows no mixed_content items; the browser console has no mixed-content warnings."
+    - step: "As a safety net, ask browsers to upgrade remaining requests."
+      snippets:
+        nginx: "add_header Content-Security-Policy \"upgrade-insecure-requests\" always;"
+        apache: "Header always set Content-Security-Policy \"upgrade-insecure-requests\""
+      verify: "Remaining http:// resources load over https."
+  cannot_determine:
+    - "Resources added later by JavaScript (only the static HTML is analysed)."
+  tests:
+    - name: mixed
+      given: {status: 200, signals: [res_mixed_content]}
+      expect: match
+
+- id: content.blocked-mime
+  title: Scripts or styles blocked by a wrong Content-Type
+  layer: content
+  severity: fail
+  group: mime
+  match:
+    all:
+      - signal: res_blocked_mime
+  confidence: {base: 0.9}
+  verdict: "Scripts or stylesheets are served with the wrong Content-Type while 'nosniff' is set, so browsers refuse to run them and the page breaks"
+  causes:
+    - {text: "The server does not know the file extension's MIME type, or the files are served by an app that returns text/html (e.g. a 200 error page).", likelihood: high}
+  fixes:
+    - step: "Serve .js as text/javascript and .css as text/css."
+      snippets:
+        nginx: "include /etc/nginx/mime.types;   # in the http block"
+        apache: "AddType text/javascript .js .mjs\nAddType text/css .css"
+        iis: "<staticContent><remove fileExtension=\".js\" /><mimeMap fileExtension=\".js\" mimeType=\"text/javascript\" /></staticContent>"
+      verify: "curl -sI <script URL> shows Content-Type: text/javascript."
+  cannot_determine:
+    - "Errors that only appear after scripts run."
+  tests:
+    - name: blocked mime
+      given: {status: 200, signals: [res_blocked_mime]}
+      expect: match
+
+- id: content.wrong-mime
+  title: Resources with an unexpected Content-Type
+  layer: content
+  severity: info
+  group: mime
+  priority: 5
+  match:
+    all:
+      - signal: res_wrong_mime
+  confidence: {base: 0.7}
+  verdict: "Some resources are served with an unexpected Content-Type"
+  causes:
+    - {text: "Missing MIME types for some extensions (fonts, modern image formats).", likelihood: high}
+  fixes:
+    - step: "Add the missing MIME types."
+      snippets:
+        nginx: "types { font/woff2 woff2; image/avif avif; image/webp webp; }"
+        apache: "AddType font/woff2 .woff2\nAddType image/avif .avif\nAddType image/webp .webp"
+      verify: "The resource table shows the expected types."
+  cannot_determine:
+    - "Whether browsers currently render these resources anyway."
+  tests:
+    - name: wrong mime
+      given: {status: 200, signals: [res_wrong_mime]}
+      expect: match
+
+- id: content.res-failed
+  title: Page resources fail to load
+  layer: content
+  severity: warn
+  match:
+    any:
+      - signal: res_failed
+      - signal: res_third_party_failed
+  confidence: {base: 0.85}
+  verdict: "Some CSS, JavaScript, image or font files on the page fail to load (see the resource table for hosts and statuses)"
+  causes:
+    - {text: "Files missing after a deploy or wrong paths in templates (404).", likelihood: high}
+    - {text: "A third-party host (CDN, analytics, fonts) is down or blocked in some regions.", likelihood: medium}
+    - {text: "Hotlink protection or a WAF blocks asset requests.", likelihood: low}
+  fixes:
+    - step: "Fix or remove the failing URLs; for third-party files, self-host critical assets or add fallbacks."
+      verify: "The resource table shows no failed items."
+  cannot_determine:
+    - "Resources loaded dynamically by JavaScript."
+  tests:
+    - name: failed resources
+      given: {status: 200, signals: [res_failed]}
+      expect: match
+
+- id: content.cors
+  title: Cross-origin fonts or scripts blocked by CORS
+  layer: content
+  severity: warn
+  match:
+    all:
+      - signal: res_cors
+  confidence: {base: 0.8}
+  verdict: "Fonts or crossorigin scripts from another origin lack Access-Control-Allow-Origin, so browsers block them"
+  causes:
+    - {text: "The asset host (CDN, bucket, other subdomain) does not send CORS headers.", likelihood: high}
+  fixes:
+    - step: "Send Access-Control-Allow-Origin for fonts and crossorigin assets on the asset host."
+      snippets:
+        nginx: "location ~* \\.(woff2?|ttf|otf|eot)$ {\n    add_header Access-Control-Allow-Origin \"https://{host}\";\n}"
+        apache: "<FilesMatch \"\\.(woff2?|ttf|otf|eot)$\">\n    Header set Access-Control-Allow-Origin \"https://{host}\"\n</FilesMatch>"
+      verify: "curl -sI -H 'Origin: https://{host}' <font URL> shows Access-Control-Allow-Origin."
+  warnings:
+    - "nginx: an add_header inside a location replaces every add_header inherited from the server block (security headers such as HSTS disappear for those files). Repeat them in that location, and keep the location's existing proxy_pass/try_files lines."
+  cannot_determine:
+    - "CORS errors on API calls made by JavaScript."
+  tests:
+    - name: cors
+      given: {status: 200, signals: [res_cors]}
+      expect: match
+
+- id: content.no-compression
+  title: Text responses are not compressed
+  layer: content
+  severity: info
+  match:
+    any:
+      - signal: no_compression
+      - signal: res_uncompressed
+  confidence: {base: 0.85}
+  verdict: "HTML, CSS or JavaScript is sent uncompressed, making pages slower than necessary"
+  causes:
+    - {text: "gzip/Brotli is not enabled for text types on the server or CDN.", likelihood: high}
+  fixes:
+    - step: "Enable compression for text types."
+      snippets:
+        nginx: "gzip on;\ngzip_types text/css application/javascript text/javascript application/json image/svg+xml;"
+        apache: "AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json image/svg+xml"
+        litespeed: "WebAdmin → Configuration → Tuning → Enable Compression: Yes"
+        iis: "<urlCompression doStaticCompression=\"true\" doDynamicCompression=\"true\" />"
+      verify: "curl -sI -H 'Accept-Encoding: gzip' https://{host}/ shows Content-Encoding: gzip."
+  cannot_determine:
+    - "Whether a CDN in front compresses for real browsers (we report what we received)."
+  tests:
+    - name: no compression
+      given: {status: 200, signals: [no_compression]}
+      expect: match
+
+- id: content.weak-cache
+  title: Static assets are not cacheable
+  layer: content
+  severity: info
+  match:
+    all:
+      - signal: res_weak_cache
+  confidence: {base: 0.75}
+  verdict: "Static files have no or very short cache lifetimes, so repeat visits download them again"
+  causes:
+    - {text: "No Cache-Control/Expires rules for static files, or no-store applied site-wide.", likelihood: high}
+  fixes:
+    - step: "Give versioned static files a long cache lifetime."
+      snippets:
+        nginx: "location ~* \\.(css|js|woff2?|png|jpe?g|gif|svg|webp|avif)$ {\n    add_header Cache-Control \"public, max-age=31536000, immutable\";\n}"
+        apache: "<FilesMatch \"\\.(css|js|woff2?|png|jpe?g|gif|svg|webp|avif)$\">\n    Header set Cache-Control \"public, max-age=31536000, immutable\"\n</FilesMatch>"
+      verify: "curl -sI <asset URL> shows a long max-age."
+  warnings:
+    - "Only use long lifetimes for files whose names change when their content changes (versioned or hashed file names)."
+    - "nginx: an add_header inside a location replaces every add_header inherited from the server block (security headers such as HSTS disappear for those files). Repeat them in that location, and keep the location's existing proxy_pass/try_files lines."
+  cannot_determine:
+    - "Whether your asset URLs are versioned."
+  tests:
+    - name: weak cache
+      given: {status: 200, signals: [res_weak_cache]}
+      expect: match
+
+- id: content.slow-ttfb
+  title: Slow time to first byte
+  layer: application
+  severity: warn
+  match:
+    all:
+      - signal: slow_ttfb
+  confidence:
+    base: 0.7
+    boosts:
+      - {when: {signal: cache_miss}, add: 0.1, why: "the CDN reports a cache miss, so the delay is at the origin"}
+  verdict: "The server takes a long time to start answering {host}; the delay is most likely at the origin application"
+  causes:
+    - {text: "Slow application code or database queries for the home page.", likelihood: high}
+    - {text: "The page is not cached (CDN cache MISS/DYNAMIC, no page cache in the application).", likelihood: medium}
+    - {text: "An overloaded or underpowered server.", likelihood: medium}
+  fixes:
+    - step: "Measure where the time goes (application profiler, slow query log) and add page/object caching."
+      snippets:
+        wordpress: "Install a page cache (e.g. LiteSpeed Cache on LiteSpeed, or a full-page cache plugin) and an object cache (Redis)."
+        php: "Enable OPcache: opcache.enable=1"
+      verify: "TTFB in the matrix drops below one second."
+  cannot_determine:
+    - "Server-side timings unless the server sends a Server-Timing header."
+  tests:
+    - name: slow
+      given: {status: 200, signals: [slow_ttfb, cache_miss]}
+      expect: match
+      min_confidence: 0.8
+
+- id: content.slow-resources
+  title: Slow page resources
+  layer: content
+  severity: info
+  match:
+    all:
+      - signal: res_slow
+  confidence: {base: 0.7}
+  verdict: "Some page resources take more than two seconds to load (see the resource waterfall)"
+  causes:
+    - {text: "Large uncompressed files or a slow third-party host.", likelihood: high}
+  fixes:
+    - step: "Compress and cache large files, and self-host or defer slow third-party scripts."
+      verify: "No resource takes more than two seconds in the waterfall."
+  cannot_determine:
+    - "Real-user performance (we measure from our nodes only)."
+  tests:
+    - name: slow resources
+      given: {status: 200, signals: [res_slow]}
+      expect: match
+
+- id: content.large-page
+  title: Very large HTML document
+  layer: content
+  severity: info
+  match:
+    all:
+      - signal: large_page
+  confidence: {base: 0.75}
+  verdict: "The HTML document itself is very large, which slows down the first render"
+  causes:
+    - {text: "Inline data, images (base64) or huge server-rendered lists in the HTML.", likelihood: high}
+  fixes:
+    - step: "Move inline data and images to separate cacheable files and paginate long lists."
+      verify: "The HTML document is a few hundred KB or less."
+  cannot_determine:
+    - "Which part of the template produces the size."
+  tests:
+    - name: large
+      given: {status: 200, signals: [large_page]}
+      expect: match
+
+- id: content.hsts-missing
+  title: HSTS not enabled
+  layer: tls
+  severity: info
+  match:
+    all:
+      - signal: hsts_missing
+  confidence: {base: 0.85}
+  verdict: "HTTPS works but the site does not send Strict-Transport-Security, so browsers may still try plain HTTP first"
+  causes:
+    - {text: "The header is not configured.", likelihood: high}
+  fixes:
+    - step: "Send HSTS once HTTPS works on every subdomain; start with a short max-age and raise it."
+      snippets:
+        nginx: "add_header Strict-Transport-Security \"max-age=86400\" always;   # raise to 31536000 later"
+        apache: "Header always set Strict-Transport-Security \"max-age=86400\""
+        iis: "<add name=\"Strict-Transport-Security\" value=\"max-age=86400\" />"
+      verify: "curl -sI https://{host}/ shows the header."
+  warnings:
+    - "With includeSubDomains or preload, every subdomain must support HTTPS, or browsers will refuse to load them."
+  cannot_determine:
+    - "Whether all subdomains support HTTPS."
+  tests:
+    - name: no hsts
+      given: {status: 200, signals: [hsts_missing]}
+      expect: match
+
+- id: content.security-headers
+  title: Recommended security headers missing
+  layer: content
+  severity: info
+  match:
+    all:
+      - signal: security_headers_missing
+  confidence: {base: 0.8}
+  verdict: "Some recommended security headers are missing (see evidence)"
+  causes:
+    - {text: "The headers were never configured.", likelihood: high}
+  fixes:
+    - step: "Add the missing headers; start the Content-Security-Policy in report-only mode."
+      snippets:
+        nginx: "add_header X-Content-Type-Options \"nosniff\" always;\nadd_header Referrer-Policy \"strict-origin-when-cross-origin\" always;\nadd_header Content-Security-Policy-Report-Only \"default-src 'self'\" always;"
+        apache: "Header always set X-Content-Type-Options \"nosniff\"\nHeader always set Referrer-Policy \"strict-origin-when-cross-origin\"\nHeader always set Content-Security-Policy-Report-Only \"default-src 'self'\""
+      verify: "curl -sI https://{host}/ shows the headers."
+  cannot_determine:
+    - "Whether a strict CSP would break your scripts (report-only mode shows this first)."
+  tests:
+    - name: headers
+      given: {status: 200, signals: [security_headers_missing]}
+      expect: match
+
+- id: content.no-http2
+  title: HTTP/2 not available
+  layer: server
+  severity: info
+  match:
+    all:
+      - signal: no_http2
+  confidence: {base: 0.8}
+  verdict: "The server only speaks HTTP/1.1; HTTP/2 would load pages with many resources faster"
+  causes:
+    - {text: "HTTP/2 is not enabled in the web server.", likelihood: high}
+  fixes:
+    - step: "Enable HTTP/2 on the TLS listener."
+      snippets:
+        nginx: "http2 on;   # nginx >= 1.25.1, or 'listen 443 ssl http2;' on older versions"
+        apache: "Protocols h2 http/1.1   # needs mod_http2 and mpm_event"
+      verify: "curl -sI --http2 https://{host}/ shows HTTP/2."
+  cannot_determine:
+    - "Whether a CDN in front already offers HTTP/2 to visitors."
+  tests:
+    - name: no h2
+      given: {status: 200, signals: [no_http2]}
+      expect: match

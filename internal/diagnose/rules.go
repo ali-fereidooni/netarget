@@ -1,5 +1,11 @@
 package diagnose
 
+import (
+	"strings"
+
+	"domaindoctor/internal/kb"
+)
+
 // Rule describes how a finding code is treated by the diagnosis engine.
 // Keep in sync with .claude/skills/dns-diagnostics/SKILL.md.
 type Rule struct {
@@ -64,35 +70,28 @@ var rules = map[string]Rule{
 	"reach.v6_broken":        {"IPv6 is published but broken", "Fix IPv6 connectivity/firewall on the server, or remove the AAAA record until IPv6 works."},
 	"reach.web_ports_closed": {"Ports 80/443 are closed", "Start the web server and open ports 80 and 443 in the firewall."},
 	"reach.no_data":          {"No measurement node responded", "Retry; if it persists, check the agents."},
-
-	// Web
-	"web.timeout":               {"The web server does not answer (timeout)", "Check the firewall (ports 80/443), that the web server is running, and server load."},
-	"web.refused":               {"The web server refuses connections", "Start the web server (nginx/Apache/app) or make it listen on ports 80/443 on the public interface."},
-	"web.reset":                 {"The web server resets connections", "Check the web server error logs, crashing workers, or a middlebox/WAF dropping connections."},
-	"tls.handshake_failed":      {"The TLS handshake fails", "Install a certificate for this host name on port 443, enable TLS 1.2/1.3, and make sure port 443 speaks HTTPS (not plain HTTP)."},
-	"web.5xx":                   {"The website returns a server error", "Check the application and reverse-proxy logs; restart the backend; for 502/504 verify the upstream address and timeouts."},
-	"web.cdn_error":             {"The CDN cannot reach your origin server", "Make sure the origin server is up, allows the CDN's IP ranges, and has a valid certificate if the CDN connects over HTTPS."},
-	"web.4xx":                   {"The website returns a client error at the root", "Check the virtual host / document root, index file, and WAF or geo-blocking rules."},
-	"web.redirect_loop":         {"Redirect loop", "Remove the duplicate redirect. A common cause is HTTPS redirect at the origin while the CDN connects over HTTP (Cloudflare 'Flexible' SSL): use 'Full (strict)' instead."},
-	"web.no_https_redirect":     {"HTTP does not redirect to HTTPS", "Add a permanent (301) redirect from http:// to https://."},
-	"web.apex_www_inconsistent": {"Bare domain and www behave differently", "Pick one canonical host and 301-redirect the other to it; make sure both have DNS records and a certificate."},
-	"web.no_hsts":               {"HSTS is not enabled", "Add the header Strict-Transport-Security: max-age=31536000; includeSubDomains once HTTPS works everywhere."},
-	"web.partial":               {"The website fails from some regions", "Check CDN/edge status and geo-blocking rules; compare the failing nodes' results."},
-	"web.redirect_dns":          {"A redirect points to a host that does not resolve", "Fix the redirect target or create DNS records for it."},
-	"web.redirect_private":      {"A redirect points to an internal address", "Redirect to the public host name instead of an internal one."},
-	"web.bad_redirect":          {"Invalid redirect", "Return a valid absolute or relative Location header on a standard port."},
-	"web.error":                 {"The web request failed", "Check the server and network path."},
-	"tls.expired":               {"The TLS certificate has expired", "Renew the certificate now (e.g. certbot renew) and fix automatic renewal; reload the web server afterwards."},
-	"tls.not_yet_valid":         {"The TLS certificate is not valid yet", "Check the server clock and the certificate's start date."},
-	"tls.expiring_soon":         {"The TLS certificate expires soon", "Renew the certificate and verify automatic renewal works."},
-	"tls.hostname_mismatch":     {"The TLS certificate does not match the host name", "Issue a certificate that includes this name (and www), or fix the virtual host/SNI so the right certificate is served."},
-	"tls.incomplete_chain":      {"The certificate chain is incomplete", "Configure the server with the full chain (e.g. fullchain.pem in nginx ssl_certificate)."},
-	"tls.untrusted":             {"The TLS certificate is not trusted", "Replace the self-signed/private-CA certificate with one from a public CA such as Let's Encrypt."},
-	"tls.old_protocol":          {"Outdated TLS version", "Enable TLS 1.2 and 1.3 and disable TLS 1.0/1.1."},
+	"web.no_data":            {"No measurement node could run the website checks", "Retry; if it persists, check the agents."},
 }
 
-// RuleFor returns the rule for a code, if any.
+// RuleFor returns the rule for a code. Website-load codes ("load.<rule id>")
+// come from the knowledge base (rules/kb/*.yaml), so their advice has a
+// single source.
 func RuleFor(code string) (Rule, bool) {
+	if id, ok := strings.CutPrefix(code, "load."); ok {
+		k, err := kb.Default()
+		if err != nil {
+			return Rule{}, false
+		}
+		r, ok := k.Rule(id)
+		if !ok {
+			return Rule{}, false
+		}
+		fix := r.Fixes[0].Step
+		if len(r.Fixes) > 1 {
+			fix += " (see the Website load section for all steps and server-specific snippets)"
+		}
+		return Rule{Title: r.Title, Fix: fix}, true
+	}
 	r, ok := rules[code]
 	return r, ok
 }

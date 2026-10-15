@@ -1,7 +1,7 @@
 # Domain Doctor report: example.com
 
-- Checked: 2026-10-14 20:58:01 UTC
-- Request ID: `655511f23e773d3afa17cfe2ea98447ee0fe4601`
+- Checked: 2026-10-15 01:31:39 UTC
+- Request ID: `516d4d36f09904496f2429b403abbe9aedd29933`
 - Measurement nodes: Master node (local)
 
 ## Diagnosis
@@ -11,9 +11,8 @@
 
 ### Fixes (in priority order)
 
-1. **HTTP does not redirect to HTTPS** — Add a permanent (301) redirect from http:// to https://.
-2. **Bare domain and www behave differently** — Pick one canonical host and 301-redirect the other to it; make sure both have DNS records and a certificate.
-3. **HSTS is not enabled** — Add the header Strict-Transport-Security: max-age=31536000; includeSubDomains once HTTPS works everywhere.
+1. **HTTP does not redirect to HTTPS** — Add a permanent redirect from HTTP to HTTPS.
+2. **Bare domain and www serve separate copies** — Pick one canonical host and 301-redirect the other.
 
 ## Checks
 
@@ -23,7 +22,7 @@
 | Name servers | ✅ OK | 2 name server(s) seen via public resolvers (direct checks unavailable) |
 | DNS zone | ✅ OK | 14 records from public resolvers over HTTPS (TTLs are cache-remaining; direct queries unavailable) |
 | Reachability | ✅ OK | Reachable from 1 of 1 node(s) |
-| Web server | ⚠️ WARN | https://example.com/ → 200 OK in 466 ms (from Master node) |
+| Website load | ⚠️ WARN | https://example.com/ → 200 in 450 ms — http://example.com/ serves the site unencrypted instead of redirecting to HTTPS |
 
 ### ✅ Domain registration — OK
 
@@ -51,20 +50,20 @@
 
 | Name | Type | TTL | Value |
 |---|---|---|---|
-| example.com | A | 235 | 104.20.23.154 |
-| example.com | A | 235 | 172.66.147.243 |
-| example.com | AAAA | 189 | 2606:4700:10::6814:179a |
-| example.com | AAAA | 189 | 2606:4700:10::ac42:93f3 |
-| example.com | MX | 300 | 0 . |
+| example.com | A | 34 | 104.20.23.154 |
+| example.com | A | 34 | 172.66.147.243 |
+| example.com | AAAA | 16 | 2606:4700:10::ac42:93f3 |
+| example.com | AAAA | 16 | 2606:4700:10::6814:179a |
+| example.com | MX | 48 | 0 . |
 | example.com | NS | 86400 | hera.ns.cloudflare.com. |
 | example.com | NS | 86400 | elliott.ns.cloudflare.com. |
 | example.com | SOA | 1800 | elliott.ns.cloudflare.com. dns.cloudflare.com. 2416374680 10000 2400 604800 1800 |
-| example.com | TXT | 300 | "v=spf1 -all" |
-| example.com | TXT | 300 | "_k2n1y4vw3qtb4skdx9e7dxt97qrmmq9" |
-| www.example.com | A | 91 | 104.20.23.154 |
-| www.example.com | A | 91 | 172.66.147.243 |
-| www.example.com | AAAA | 185 | 2606:4700:10::6814:179a |
-| www.example.com | AAAA | 185 | 2606:4700:10::ac42:93f3 |
+| example.com | TXT | 166 | "v=spf1 -all" |
+| example.com | TXT | 166 | "_k2n1y4vw3qtb4skdx9e7dxt97qrmmq9" |
+| www.example.com | A | 300 | 104.20.23.154 |
+| www.example.com | A | 300 | 172.66.147.243 |
+| www.example.com | AAAA | 194 | 2606:4700:10::6814:179a |
+| www.example.com | AAAA | 194 | 2606:4700:10::ac42:93f3 |
 
 ### ✅ Reachability — OK
 
@@ -73,36 +72,105 @@
 |---|---|---|---|---|---|---|---|---|
 | Master node | 104.20.23.154 | 4 | 4 | 0% | 0.0/0.0/0.0 | open | open | ok |
 | Master node | 172.66.147.243 | 4 | 4 | 0% | 0.0/0.0/0.0 | open | open | ok |
-| Master node | 2606:4700:10::6814:179a | 0 | 0 | 0% | 0.0/0.0/0.0 |  |  | n/a |
-| Master node | 2606:4700:10::ac42:93f3 | 0 | 0 | 0% | 0.0/0.0/0.0 |  |  | n/a |
+| Master node | 2606:4700:10::ac42:93f3 | — | — | — | this node has no IPv6 connectivity | — | — | n/a |
+| Master node | 2606:4700:10::6814:179a | — | — | — | this node has no IPv6 connectivity | — | — | n/a |
 
-### ⚠️ Web server — WARN
+### ⚠️ Website load — WARN
 
-- **WARN** `web.no_https_redirect` http://example.com/ does not redirect to HTTPS, so visitors can stay on an unencrypted connection. (`http://example.com/ → 200`)
-- **WARN** `web.no_https_redirect` http://www.example.com/ does not redirect to HTTPS, so visitors can stay on an unencrypted connection. (`http://www.example.com/ → 200`)
-- **WARN** `web.apex_www_inconsistent` The bare domain and www serve the site separately instead of redirecting one to the other (duplicate content, split cookies). (`https://example.com/ → https://example.com/ \| https://www.example.com/ → https://www.example.com/`)
-- **WARN** `web.no_hsts` No Strict-Transport-Security (HSTS) header: browsers may still try plain HTTP first. (`https://example.com/`)
-- **INFO** `web.missing_security_headers` Recommended security headers are missing: Content-Security-Policy, X-Content-Type-Options, Referrer-Policy, X-Frame-Options. (`https://example.com/`)
+- **WARN** `load.site.no-https-redirect` http://example.com/ serves the site unencrypted instead of redirecting to HTTPS (`GET http://example.com/ → 200 (stays on http://)`)
+- **WARN** `load.site.apex-www-split` The bare domain and www both serve the site without redirecting to one canonical address (`https://example.com/ and https://www.example.com/ end at different hosts`)
+- **INFO** `load.content.hsts-missing` HTTPS works but the site does not send Strict-Transport-Security, so browsers may still try plain HTTP first (`no Strict-Transport-Security header on https://example.com/`)
+- **INFO** `load.content.security-headers` Some recommended security headers are missing (see evidence) (`missing: content-security-policy, x-content-type-options, referrer-policy`)
+- **INFO** `load.content.weak-cache` Static files have no or very short cache lifetimes, so repeat visits download them again (`1 static resource(s) without useful caching: https://example.com/s.js`)
 
-`http://example.com/`
+**Verdict:** http://example.com/ serves the site unencrypted instead of redirecting to HTTPS
 
-- http://example.com/ → 200 OK (300 ms)
+- Layer at fault: **server** (confidence high, 85%)
 
-`https://example.com/`
+Evidence:
 
-- https://example.com/ → 200 OK (466 ms)
+- `GET http://example.com/ → 200 (stays on http://)`
 
-`http://www.example.com/`
+Likely causes:
 
-- http://www.example.com/ → 200 OK (316 ms)
+- (high) No HTTP → HTTPS redirect is configured.
 
-`https://www.example.com/`
+Fix steps:
 
-- https://www.example.com/ → 200 OK (463 ms)
+1. Add a permanent redirect from HTTP to HTTPS.
 
-| Node | URL | Final | Status | Total ms |
-|---|---|---|---|---|
-| Master node | http://example.com/ | http://example.com/ | 200 | 300 |
-| Master node | https://example.com/ | https://example.com/ | 200 | 466 |
-| Master node | http://www.example.com/ | http://www.example.com/ | 200 | 316 |
-| Master node | https://www.example.com/ | https://www.example.com/ | 200 | 463 |
+   apache:
+
+   ```
+   RewriteEngine On
+   RewriteCond %{HTTPS} off
+   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+   ```
+
+
+   cloudflare:
+
+   ```
+   SSL/TLS → Edge Certificates → Always Use HTTPS: On
+   ```
+
+
+   iis:
+
+   ```
+   <rule name="HTTPS" stopProcessing="true"><match url="(.*)" /><conditions><add input="{HTTPS}" pattern="off" /></conditions><action type="Redirect" url="https://{HTTP_HOST}/{R:1}" redirectType="Permanent" /></rule>
+   ```
+
+
+   litespeed:
+
+   ```
+   RewriteEngine On
+   RewriteCond %{HTTPS} off
+   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+   ```
+
+
+   nginx:
+
+   ```
+   server { listen 80; server_name example.com www.example.com; return 301 https://$host$request_uri; }
+   ```
+
+   - Verify: curl -sI http://example.com/ returns 301 with Location: https://…
+
+Could not determine from outside:
+
+- Whether some HTTP-only clients must keep working.
+
+| Kind | Detected | Confidence | Evidence |
+|---|---|---|---|
+| cdn | Cloudflare | high | header cf-ray: a4ab1107eeb2365b-FRA (GET http://example.com/); header server: cloudflare (GET http://example.com/); header cf-cache-status: HIT (GET http://example.com/); address 104.20.23.154 is in 104.16.0.0/13 |
+
+| Node | Request | Final | Result | Proto | TTFB ms | Total ms | Differs |
+|---|---|---|---|---|---|---|---|
+| Master node | GET https://example.com/ | https://example.com/ | 200 | HTTP/2.0 | 450 | 450 |  |
+| Master node | GET http://example.com/ | http://example.com/ | 200 | HTTP/1.1 | 348 | 349 |  |
+| Master node | GET https://www.example.com/ | https://www.example.com/ | 200 | HTTP/2.0 | 501 | 501 |  |
+| Master node | GET http://www.example.com/ | http://www.example.com/ | 200 | HTTP/1.1 | 276 | 276 |  |
+| Master node | HEAD https://example.com/ | https://example.com/ | 200 | HTTP/2.0 | 497 | 497 |  |
+| Master node | GET https://example.com/ curl UA | https://example.com/ | 200 | HTTP/2.0 | 497 | 497 |  |
+| Master node | GET https://example.com/ googlebot UA | https://example.com/ | 200 | HTTP/2.0 | 424 | 424 |  |
+| Master node | GET https://example.com/ HTTP/1.1 | https://example.com/ | 200 | HTTP/1.1 | 494 | 494 |  |
+| Master node | GET https://example.com/ HTTP/2 | https://example.com/ | 200 | HTTP/2.0 | 440 | 440 |  |
+| Master node | GET https://example.com/ gzip | https://example.com/ | 200 | HTTP/2.0 | 434 | 434 |  |
+| Master node | GET https://example.com/ no compression | https://example.com/ | 200 | HTTP/2.0 | 495 | 495 |  |
+
+Resources (1 found, 1 checked):
+
+| Kind | URL | Status | ms | Size | Issues |
+|---|---|---|---|---|---|
+| script | https://example.com/s.js | 200 | 441 | 1333 | weak_cache |
+
+- Also: **Bare domain and www serve separate copies** — The bare domain and www both serve the site without redirecting to one canonical address (warn, medium)
+
+- Also: **HSTS not enabled** — HTTPS works but the site does not send Strict-Transport-Security, so browsers may still try plain HTTP first (info, high)
+
+- Also: **Recommended security headers missing** — Some recommended security headers are missing (see evidence) (info, high)
+
+- Also: **Static assets are not cacheable** — Static files have no or very short cache lifetimes, so repeat visits download them again (info, medium)

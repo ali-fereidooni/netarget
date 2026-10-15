@@ -1,0 +1,264 @@
+# Origin web server / application 5xx responses (no CDN error page involved).
+
+- id: http.500.htaccess
+  title: 500 from Apache/LiteSpeed — likely an .htaccess error
+  layer: server
+  severity: fail
+  group: status-500
+  priority: 1
+  match:
+    all:
+      - status: [500]
+    any:
+      - signal: apache_500_page
+      - signal: mentions_htaccess
+  confidence:
+    base: 0.65
+    boosts:
+      - {when: {server: [apache, litespeed]}, add: 0.1, why: "Apache-compatible server (reads .htaccess)"}
+  verdict: "{server} returns 500 Internal Server Error with its generic 'misconfiguration' page — most often a broken .htaccess rule"
+  causes:
+    - {text: "Invalid directive or syntax in .htaccess (a module that is not loaded, a typo, a bad RewriteRule).", likelihood: high}
+    - {text: "A PHP handler/version directive in .htaccess that the server does not support.", likelihood: medium}
+    - {text: "Files or folders with unsafe permissions that suPHP/LiteSpeed refuse to execute.", likelihood: medium}
+  fixes:
+    - step: "Read the error log; an .htaccess problem is reported with the file and line ('Invalid command', 'RewriteRule: bad flag')."
+      snippets:
+        apache: "sudo tail -n 50 /var/log/apache2/error.log    # Debian/Ubuntu\nsudo tail -n 50 /var/log/httpd/error_log      # RHEL/CentOS\n# cPanel: ~/logs/ or cPanel → Metrics → Errors"
+        litespeed: "sudo tail -n 50 /usr/local/lsws/logs/error.log"
+      verify: "The log points to the exact .htaccess line."
+    - step: "Test by renaming .htaccess temporarily; if the site comes back, fix the offending line and restore the file."
+      snippets:
+        apache: "cd /var/www/{host} || exit   # the site's document root\nmv .htaccess .htaccess.bak     # test only\n# reload the page, then restore and fix:\nmv .htaccess.bak .htaccess"
+      verify: "With the fixed .htaccess in place, curl -sI https://{host}/ returns 200."
+      warning: "While .htaccess is renamed, its access restrictions and redirects are off too; restore it within minutes."
+    - step: "Make sure files are 644 and directories 755 (some PHP handlers refuse group/world-writable files)."
+      snippets:
+        apache: "DOCROOT=/var/www/{host}   # set to your document root\nfind \"$DOCROOT\" -type d -exec chmod 755 {} +\nfind \"$DOCROOT\" -type f -exec chmod 644 {} +\nchmod 640 \"$DOCROOT\"/wp-config.php \"$DOCROOT\"/.env 2>/dev/null   # keep secrets private"
+      verify: "No 'is writable by group/others' messages in the log."
+  cannot_determine:
+    - "The error log line; renaming .htaccess is a test you must do on the server."
+  tests:
+    - name: apache generic 500
+      given: {status: 500, server: apache, signals: [apache_500_page]}
+      expect: match
+      min_confidence: 0.75
+    - name: 500 without apache markers
+      given: {status: 500, server: nginx}
+      expect: no_match
+
+- id: http.500.php
+  title: PHP error shown on the page
+  layer: application
+  severity: fail
+  group: status-500
+  priority: 0
+  match:
+    all:
+      - signal: php_error_visible
+    any:
+      # A real PHP error names the file and line or prints a stack trace;
+      # "Fatal error" alone also appears in blog posts about PHP.
+      - body: '\.php(</b>)? on line (<b>)?\d+|Stack trace:'
+  confidence:
+    base: 0.85
+    boosts:
+      - {when: {body: 'Allowed memory size'}, add: 0.1, why: "PHP ran out of memory"}
+  verdict: "The application crashes with a PHP error (the error text is visible on the page)"
+  causes:
+    - {text: "A fatal error after an update (plugin/theme/module incompatible with the PHP version).", likelihood: high}
+    - {text: "PHP memory_limit is too low for the request ('Allowed memory size ... exhausted').", likelihood: medium}
+    - {text: "A syntax error in a recently edited PHP file.", likelihood: medium}
+  fixes:
+    - step: "Read the full error in the PHP/application log and fix or roll back the file, plugin or update it names."
+      snippets:
+        php: "php -i | grep -E '^error_log'          # where PHP writes errors, if set\nsudo tail -n 50 /var/log/nginx/error.log   # nginx + PHP-FPM: script errors arrive as 'FastCGI sent in stderr'\nsudo tail -n 50 /var/log/apache2/error.log # Apache mod_php / proxy_fcgi"
+        wordpress: "Disable the plugin named in the error by renaming its folder in wp-content/plugins/, then update or replace it."
+        laravel: "tail -n 50 storage/logs/laravel.log"
+      verify: "The page loads without a PHP error."
+    - step: "If memory is exhausted, raise memory_limit moderately (and fix the leak if it keeps growing)."
+      snippets:
+        php: "memory_limit = 256M    ; php.ini or the pool config\n; WordPress: define('WP_MEMORY_LIMIT', '256M'); in wp-config.php"
+      verify: "The same page loads; memory errors stop in the log."
+    - step: "Turn off error display in production after fixing, so visitors do not see stack traces."
+      snippets:
+        php: "display_errors = Off\nlog_errors = On"
+      verify: "Errors appear in the log, not on the page."
+  cannot_determine:
+    - "Errors that are logged but not displayed on the page."
+  tests:
+    - name: php fatal on page
+      given: {status: 500, signals: [php_error_visible], body: "<b>Fatal error</b>: Allowed memory size of 134217728 bytes exhausted in <b>/var/www/x.php</b> on line <b>12</b>"}
+      expect: match
+      min_confidence: 0.9
+    - name: an article about PHP errors is not one
+      given: {status: 200, signals: [php_error_visible], body: "<p>How to fix a Fatal error in WordPress</p>"}
+      expect: no_match
+
+- id: http.500.generic
+  title: 500 Internal Server Error
+  layer: application
+  severity: fail
+  group: status-500
+  priority: 9
+  match:
+    all:
+      - status: [500]
+  confidence: {base: 0.6}
+  verdict: "The site returns 500 Internal Server Error: the application or server configuration fails while building the page"
+  causes:
+    - {text: "An application error (exception, bad deploy, missing environment variable or database connection).", likelihood: high}
+    - {text: "A server configuration error (.htaccess, web.config, handler/PHP version).", likelihood: medium}
+    - {text: "Wrong file permissions or ownership after a deploy.", likelihood: low}
+  fixes:
+    - step: "Read the error log for the time of the failed request — it holds the actual error."
+      snippets:
+        apache: "/var/log/apache2/error.log  (RHEL: /var/log/httpd/error_log; cPanel: ~/logs/)"
+        nginx: "/var/log/nginx/error.log  and the PHP-FPM/app log"
+        litespeed: "/usr/local/lsws/logs/error.log  and stderr.log"
+        iis: "Event Viewer → Application log; enable detailed errors locally only"
+        laravel: "storage/logs/laravel.log"
+        wordpress: "wp-content/debug.log after define('WP_DEBUG_LOG', true);"
+      verify: "You have the exception or error line."
+    - step: "Roll back the latest deploy or change if the error started after it."
+      verify: "The site returns 200 after the rollback."
+  cannot_determine:
+    - "The application's error log and stack trace."
+  tests:
+    - name: generic 500
+      given: {status: 500}
+      expect: match
+
+- id: http.502.origin
+  title: 502 Bad Gateway from the origin's reverse proxy
+  layer: application
+  severity: fail
+  group: origin-5xx
+  match:
+    all:
+      - status: [502]
+      - cdn: [none]
+  confidence:
+    base: 0.7
+    boosts:
+      - {when: {server: [nginx]}, add: 0.1, why: "nginx in front of an application (PHP-FPM, Node, Gunicorn…)"}
+  verdict: "{server} cannot get a response from the application behind it (502 Bad Gateway)"
+  causes:
+    - {text: "The application process (PHP-FPM, Node, Python, Java) is stopped or crashed.", likelihood: high}
+    - {text: "The proxy points to the wrong socket or port (e.g. PHP version changed the php-fpm socket path).", likelihood: high}
+    - {text: "The application closes connections or returns headers that are too large for the proxy buffers.", likelihood: medium}
+  fixes:
+    - step: "Check that the upstream service is running and listening where the proxy expects it."
+      snippets:
+        nginx: "sudo tail -n 30 /var/log/nginx/error.log      # 'connect() failed', 'upstream prematurely closed'\nsudo systemctl status php8.3-fpm               # or your app service\ngrep -R 'fastcgi_pass\\|proxy_pass' /etc/nginx/sites-enabled/"
+        apache: "sudo tail -n 30 /var/log/apache2/error.log    # proxy: error reading status line\nsudo systemctl status php8.3-fpm"
+      verify: "The upstream is active and its socket/port matches fastcgi_pass/proxy_pass."
+    - step: "If headers are too large, increase proxy buffers."
+      snippets:
+        nginx: "proxy_buffer_size 16k;\nproxy_buffers 8 16k;\nfastcgi_buffer_size 32k;\nfastcgi_buffers 16 16k;"
+      verify: "No 'upstream sent too big header' in the error log."
+  cannot_determine:
+    - "The upstream service state and the proxy error log."
+  tests:
+    - name: nginx 502 no cdn
+      given: {status: 502, cdn: none, server: nginx, body: "<center><h1>502 Bad Gateway</h1></center><hr><center>nginx</center>"}
+      expect: match
+      min_confidence: 0.8
+    - name: cdn 502 is a different rule
+      given: {status: 502, cdn: cloudflare}
+      expect: no_match
+
+- id: http.504.origin
+  title: 504 Gateway Timeout from the origin's reverse proxy
+  layer: application
+  severity: fail
+  group: origin-5xx
+  match:
+    all:
+      - status: [504]
+      - cdn: [none]
+  confidence: {base: 0.7}
+  verdict: "The application behind {server} is too slow; the proxy gave up waiting (504 Gateway Timeout)"
+  causes:
+    - {text: "Slow database queries or external API calls in the application.", likelihood: high}
+    - {text: "All application workers are busy (pm.max_children reached, thread pool exhausted).", likelihood: medium}
+  fixes:
+    - step: "Find the slow request and fix it; check worker saturation."
+      snippets:
+        nginx: "sudo tail -n 30 /var/log/nginx/error.log    # 'upstream timed out'"
+        php: "grep -i 'max_children' /var/log/php*-fpm.log"
+      verify: "The page answers well within the proxy timeout."
+    - step: "Only after that, align timeouts (proxy_read_timeout / fastcgi_read_timeout) with the slowest legitimate request."
+      snippets:
+        nginx: "fastcgi_read_timeout 60s;\nproxy_read_timeout 60s;"
+        apache: "ProxyTimeout 60"
+      verify: "No 504s under normal load."
+  cannot_determine:
+    - "Which query or call is slow (needs application logs/APM)."
+  tests:
+    - name: 504
+      given: {status: 504, cdn: none}
+      expect: match
+
+- id: http.503.maintenance
+  title: 503 — the site is in maintenance mode
+  layer: application
+  severity: warn
+  group: status-503
+  priority: 1
+  match:
+    all:
+      - status: [503]
+      - signal: maintenance_page
+  confidence:
+    base: 0.8
+    boosts:
+      - {when: {signal: retry_after}, add: 0.1, why: "Retry-After header present"}
+  verdict: "The site is deliberately in maintenance mode (503)"
+  causes:
+    - {text: "A maintenance mode left on after an update (WordPress .maintenance file, Laravel 'php artisan down').", likelihood: high}
+  fixes:
+    - step: "Finish or abort the update and switch maintenance mode off."
+      snippets:
+        wordpress: "rm .maintenance    # in the WordPress root, after the update finished"
+        laravel: "php artisan up"
+      verify: "curl -sI https://{host}/ returns 200."
+  cannot_determine:
+    - "Whether an update is still running."
+  tests:
+    - name: wp maintenance
+      given: {status: 503, signals: [maintenance_page]}
+      expect: match
+
+- id: http.503.unavailable
+  title: 503 Service Unavailable
+  layer: application
+  severity: fail
+  group: status-503
+  priority: 5
+  match:
+    all:
+      - status: [503]
+    none:
+      - signal: maintenance_page    # a deliberate maintenance page is http.503.maintenance
+  confidence: {base: 0.6}
+  verdict: "The server says the service is unavailable (503): overloaded, out of resources, or no healthy backend"
+  causes:
+    - {text: "The server or hosting account hit resource limits (CPU, memory, entry processes on shared hosting).", likelihood: high}
+    - {text: "The load balancer or proxy has no healthy backend.", likelihood: medium}
+    - {text: "The application pool/service stopped (IIS app pool stopped returns 503).", likelihood: medium}
+  fixes:
+    - step: "Check resource usage and the backend/service state at the time of the error."
+      snippets:
+        any: "uptime; free -m; sudo journalctl -p err -n 50\n# shared hosting: cPanel → Metrics → Resource Usage (faults)"
+        iis: "Get-WebAppPoolState -Name '<pool>'   # Start-WebAppPool if Stopped; check why it stopped"
+      verify: "Resources have headroom and the service is running."
+  cannot_determine:
+    - "Hosting resource limits and backend health checks."
+  tests:
+    - name: 503
+      given: {status: 503}
+      expect: match
+    - name: maintenance page is the other rule
+      given: {status: 503, signals: [maintenance_page]}
+      expect: no_match

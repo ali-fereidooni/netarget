@@ -65,8 +65,7 @@ var precedenceOrder = []string{
 	"ns.checker_dns_blocked", "ns.parent_unreachable", "ns.no_delegation", "ns.none_usable", "ns.missing_glue", "ns.no_address",
 	"dnssec.broken", "dns.nxdomain", "dns.cname_at_apex", "dns.no_address", "dns.dangling_cname",
 	"reach.down_all",
-	"web.timeout", "web.refused", "web.reset", "tls.handshake_failed", "tls.expired", "tls.not_yet_valid",
-	"tls.hostname_mismatch", "tls.untrusted", "web.redirect_loop", "web.cdn_error", "web.5xx",
+	// Website-load findings (load.*) keep the knowledge base's own ranking.
 }
 
 func precedence(code string) int {
@@ -209,7 +208,7 @@ func Diagnose(results []*checks.Result) *Diagnosis {
 // isNetworkSymptom: warnings that are meaningless once an earlier layer failed hard.
 func isNetworkSymptom(code string) bool {
 	switch code {
-	case "reach.partial", "reach.no_data", "web.partial", "web.no_data", "dns.propagation", "dns.resolver_servfail":
+	case "reach.partial", "reach.no_data", "load.site.regional", "web.no_data", "dns.propagation", "dns.resolver_servfail":
 		return true
 	}
 	return false

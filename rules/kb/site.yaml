@@ -1,0 +1,288 @@
+# Site-level problems: wrong content, host/redirect setup, regional and protocol differences.
+
+- id: site.default-page
+  title: Web server default page instead of the site
+  layer: server
+  severity: fail
+  group: wrong-site
+  match:
+    all:
+      - signal: default_page
+  confidence: {base: 0.85}
+  verdict: "{host} shows the web server's default welcome page, not your site: the request is not reaching the site's virtual host or document root"
+  causes:
+    - {text: "{host} is not listed in any virtual host (ServerName/server_name), so the default host answers.", likelihood: high}
+    - {text: "The document root still points to the default directory (/var/www/html).", likelihood: medium}
+    - {text: "The DNS A record points to a new/other server where the site is not deployed.", likelihood: medium}
+  fixes:
+    - step: "Add {host} and www.{host} to the site's virtual host and point it to the site's files; disable the default site if needed."
+      snippets:
+        nginx: "server {\n    listen 80;\n    listen 443 ssl;\n    server_name {host} www.{host};\n    ssl_certificate     /etc/letsencrypt/live/{host}/fullchain.pem;\n    ssl_certificate_key /etc/letsencrypt/live/{host}/privkey.pem;\n    root /var/www/{host}/public;\n}\n# sudo rm /etc/nginx/sites-enabled/default && sudo nginx -t && sudo systemctl reload nginx"
+        apache: "<VirtualHost *:80>\n    ServerName {host}\n    ServerAlias www.{host}\n    DocumentRoot /var/www/{host}/public\n</VirtualHost>\n<VirtualHost *:443>\n    ServerName {host}\n    ServerAlias www.{host}\n    DocumentRoot /var/www/{host}/public\n    SSLEngine on\n    SSLCertificateFile    /etc/letsencrypt/live/{host}/fullchain.pem\n    SSLCertificateKeyFile /etc/letsencrypt/live/{host}/privkey.pem\n</VirtualHost>\n# sudo a2dissite 000-default && sudo systemctl reload apache2"
+        iis: "Add host-name bindings for {host} and www.{host} to the site (not to Default Web Site)."
+      verify: "curl -s https://{host}/ | grep -i '<title>' shows your site's title."
+    - step: "Confirm the A/AAAA record points to the server where the site is deployed."
+      applies_to: [dns]
+      verify: "The IP from dig +short {host} is the server you deployed to."
+  cannot_determine:
+    - "Which virtual hosts exist on the server."
+  tests:
+    - name: welcome to nginx
+      given: {status: 200, server: nginx, body: "<title>Welcome to nginx!</title>", signals: [default_page]}
+      expect: match
+
+- id: site.parked
+  title: Domain parking page
+  layer: dns
+  severity: fail
+  group: wrong-site
+  priority: 1
+  match:
+    all:
+      - signal: parked_page
+  confidence: {base: 0.8}
+  verdict: "{host} shows a domain-parking or 'for sale' page instead of your site"
+  causes:
+    - {text: "The domain's DNS still points to the registrar's parking servers (default records after registration or renewal).", likelihood: high}
+    - {text: "The domain expired and the registrar replaced the DNS with a parking page.", likelihood: medium}
+  fixes:
+    - step: "Point the A/AAAA records (or the name servers) to your hosting instead of the registrar's parking service."
+      applies_to: [dns, registrar]
+      verify: "dig +short {host} returns your server's IP and the site loads."
+  cannot_determine:
+    - "Your registrar account settings."
+  tests:
+    - name: parked
+      given: {status: 200, signals: [parked_page]}
+      expect: match
+
+- id: site.directory-listing
+  title: Directory listing shown instead of the site
+  layer: server
+  severity: warn
+  match:
+    all:
+      - signal: directory_listing
+  confidence: {base: 0.85}
+  verdict: "{host} shows an automatic file listing ('Index of /') instead of a home page — the index file is missing and listing is enabled"
+  causes:
+    - {text: "No index.html/index.php in the document root, and directory indexes are enabled.", likelihood: high}
+  fixes:
+    - step: "Upload or name the start file correctly, then turn directory listing off (it exposes your files)."
+      snippets:
+        apache: "DirectoryIndex index.php index.html\nOptions -Indexes"
+        nginx: "index index.php index.html;\nautoindex off;"
+        iis: "<directoryBrowse enabled=\"false\" />"
+      verify: "The home page loads; /some-folder/ without an index returns 403, not a listing."
+  cannot_determine:
+    - "Which files are exposed in sub-directories."
+  tests:
+    - name: listing
+      given: {status: 200, signals: [directory_listing]}
+      expect: match
+
+- id: site.redirect-loop
+  title: Redirect loop
+  layer: server
+  severity: fail
+  group: redirect-loop
+  priority: 3
+  match:
+    all:
+      - signal: redirect_loop
+  confidence: {base: 0.85}
+  verdict: "{host} redirects in a loop; browsers show 'too many redirects'"
+  causes:
+    - {text: "Two redirect rules fight: e.g. www → apex in one place and apex → www in another.", likelihood: high}
+    - {text: "An HTTPS redirect behind a proxy/load balancer that terminates TLS (the app sees HTTP and redirects again).", likelihood: high}
+    - {text: "The application's configured site URL differs from the redirect rules (WordPress siteurl/home).", likelihood: medium}
+  fixes:
+    - step: "List the chain (the evidence shows it) and keep one canonical redirect: http → https and one of apex/www."
+      snippets:
+        apache: "RewriteEngine On\nRewriteCond %{HTTPS} off [OR]\nRewriteCond %{HTTP_HOST} !^{host}$ [NC]\nRewriteRule ^ https://{host}%{REQUEST_URI} [L,R=301]"
+        nginx: "server { listen 80; server_name {host} www.{host}; return 301 https://{host}$request_uri; }"
+        wordpress: "Settings → General: WordPress Address and Site Address both https://{host}"
+      verify: "curl -sIL https://{host}/ | grep -i -E '^(HTTP|location)' shows at most one redirect, then 200."
+    - step: "Behind a TLS-terminating proxy, base the HTTPS redirect on X-Forwarded-Proto."
+      snippets:
+        apache: "RewriteCond %{HTTP:X-Forwarded-Proto} !https\nRewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]"
+      verify: "The loop disappears behind the proxy."
+  cannot_determine:
+    - "Redirects configured in the application or hosting panel (only their effect is visible)."
+  tests:
+    - name: loop
+      given: {status: 301, cdn: none, signals: [redirect_loop]}
+      expect: match
+
+- id: site.www-fail
+  title: www does not work while the bare domain does
+  layer: server
+  severity: warn
+  group: apex-www
+  match:
+    all:
+      - signal: www_fail
+  confidence: {base: 0.8}
+  verdict: "https://www.{host}/ fails while https://{host}/ works; visitors who type www get an error"
+  causes:
+    - {text: "www is missing from the certificate or the virtual host.", likelihood: high}
+    - {text: "www points to a different server or has no DNS record.", likelihood: medium}
+  fixes:
+    - step: "Add www to the certificate and the virtual host, and redirect it to the canonical host."
+      snippets:
+        nginx: "sudo certbot --nginx -d {host} -d www.{host}\n# server_name {host} www.{host};"
+        apache: "sudo certbot --apache -d {host} -d www.{host}\n# ServerAlias www.{host}"
+      verify: "curl -sIL https://www.{host}/ ends with 200."
+  cannot_determine:
+    - "Whether www is intentionally unused."
+  tests:
+    - name: www fails
+      given: {status: 200, signals: [www_fail]}
+      expect: match
+
+- id: site.apex-fail
+  title: The bare domain does not work while www does
+  layer: server
+  severity: fail
+  group: apex-www
+  match:
+    all:
+      - signal: apex_fail
+  confidence: {base: 0.8}
+  verdict: "https://{host}/ fails while the www address works; visitors typing the bare domain get an error"
+  causes:
+    - {text: "The bare domain is missing from the certificate/virtual host, or has no A record (only www has one).", likelihood: high}
+  fixes:
+    - step: "Serve the bare domain too (DNS A/ALIAS record, certificate, virtual host) and redirect it to www if www is canonical."
+      snippets:
+        nginx: "server {\n    listen 443 ssl;\n    server_name {host};\n    ssl_certificate     /etc/letsencrypt/live/{host}/fullchain.pem;   # must include {host}\n    ssl_certificate_key /etc/letsencrypt/live/{host}/privkey.pem;\n    return 301 https://www.{host}$request_uri;\n}"
+        apache: "<VirtualHost *:443>\n  ServerName {host}\n  SSLEngine on\n  SSLCertificateFile    /etc/letsencrypt/live/{host}/fullchain.pem   # must include {host}\n  SSLCertificateKeyFile /etc/letsencrypt/live/{host}/privkey.pem\n  Redirect permanent / https://www.{host}/\n</VirtualHost>"
+      verify: "curl -sIL https://{host}/ ends with 200 on the www site."
+  cannot_determine:
+    - "Your DNS provider's support for ALIAS/flattened records at the apex."
+  tests:
+    - name: apex fails
+      given: {error_kind: refused, signals: [apex_fail]}
+      expect: match
+
+- id: site.apex-www-split
+  title: Bare domain and www serve separate copies
+  layer: server
+  severity: warn
+  group: apex-www
+  priority: 5
+  match:
+    all:
+      - signal: apex_www_split
+  confidence: {base: 0.75}
+  verdict: "The bare domain and www both serve the site without redirecting to one canonical address"
+  causes:
+    - {text: "No canonical redirect configured; both names point to the same site.", likelihood: high}
+  fixes:
+    - step: "Pick one canonical host and 301-redirect the other."
+      snippets:
+        nginx: "server {\n    listen 443 ssl;\n    server_name www.{host};\n    ssl_certificate     /etc/letsencrypt/live/{host}/fullchain.pem;   # must include www.{host}\n    ssl_certificate_key /etc/letsencrypt/live/{host}/privkey.pem;\n    return 301 https://{host}$request_uri;\n}"
+        apache: "RewriteCond %{HTTP_HOST} ^www\\.(.+)$ [NC]\nRewriteRule ^ https://%1%{REQUEST_URI} [L,R=301]"
+      verify: "One of the two names answers with a 301 to the other."
+  cannot_determine:
+    - "Which host your search-engine setup treats as canonical."
+  tests:
+    - name: split
+      given: {status: 200, signals: [apex_www_split]}
+      expect: match
+
+- id: site.no-https-redirect
+  title: HTTP does not redirect to HTTPS
+  layer: server
+  severity: warn
+  match:
+    all:
+      - signal: http_no_https_redirect
+  confidence: {base: 0.85}
+  verdict: "http://{host}/ serves the site unencrypted instead of redirecting to HTTPS"
+  causes:
+    - {text: "No HTTP → HTTPS redirect is configured.", likelihood: high}
+  fixes:
+    - step: "Add a permanent redirect from HTTP to HTTPS."
+      snippets:
+        nginx: "server { listen 80; server_name {host} www.{host}; return 301 https://$host$request_uri; }"
+        apache: "RewriteEngine On\nRewriteCond %{HTTPS} off\nRewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]"
+        litespeed: "RewriteEngine On\nRewriteCond %{HTTPS} off\nRewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]"
+        iis: "<rule name=\"HTTPS\" stopProcessing=\"true\"><match url=\"(.*)\" /><conditions><add input=\"{HTTPS}\" pattern=\"off\" /></conditions><action type=\"Redirect\" url=\"https://{HTTP_HOST}/{R:1}\" redirectType=\"Permanent\" /></rule>"
+        cloudflare: "SSL/TLS → Edge Certificates → Always Use HTTPS: On"
+      verify: "curl -sI http://{host}/ returns 301 with Location: https://…"
+  cannot_determine:
+    - "Whether some HTTP-only clients must keep working."
+  tests:
+    - name: no redirect
+      given: {status: 200, signals: [http_no_https_redirect]}
+      expect: match
+
+- id: site.regional
+  title: The site fails from some regions only
+  layer: network
+  severity: warn
+  match:
+    all:
+      - signal: regional
+  confidence: {base: 0.75}
+  verdict: "Some measurement nodes load {host} and others fail: a regional routing, filtering or geo-blocking problem"
+  causes:
+    - {text: "Geo-blocking or a country-level firewall/WAF rule.", likelihood: high}
+    - {text: "A routing problem or filtering between some networks and the server.", likelihood: medium}
+    - {text: "A CDN edge location failing in one region.", likelihood: medium}
+  fixes:
+    - step: "Compare the per-node results and run a traceroute from a failing node; check geo rules in your firewall/CDN."
+      verify: "All nodes load the site."
+  cannot_determine:
+    - "Network conditions inside the failing region beyond our nodes."
+  tests:
+    - name: regional
+      given: {status: 200, signals: [regional]}
+      expect: match
+
+- id: site.googlebot-blocked
+  title: Search-engine crawler blocked
+  layer: application
+  severity: warn
+  match:
+    all:
+      - signal: googlebot_blocked
+  confidence: {base: 0.65}
+  verdict: "Requests with a Googlebot-like User-Agent are blocked while browsers work; real crawlers may be blocked too"
+  causes:
+    - {text: "A bot-protection rule blocks crawler User-Agents (and may not verify real Googlebot by reverse DNS).", likelihood: high}
+  fixes:
+    - step: "Allow verified search-engine crawlers in your WAF/bot settings; check crawl errors in Google Search Console."
+      verify: "Search Console URL Inspection fetches the page successfully."
+  cannot_determine:
+    - "Whether the real Googlebot (verified by IP) is blocked; our request only imitates its User-Agent."
+  tests:
+    - name: googlebot
+      given: {status: 200, signals: [googlebot_blocked]}
+      expect: match
+
+- id: site.h2-fail
+  title: HTTP/2 requests fail while HTTP/1.1 works
+  layer: server
+  severity: warn
+  match:
+    any:
+      - signal: h2_fail
+      - signal: h1_fail
+  confidence: {base: 0.7}
+  verdict: "{host} fails for one HTTP version only; browsers using that version see errors"
+  causes:
+    - {text: "A broken HTTP/2 setup (protocol error, incompatible module, proxy that mishandles HTTP/2).", likelihood: high}
+  fixes:
+    - step: "Check the server error log for HTTP/2 protocol errors and update the server or the module/proxy that breaks it. Until then, serving HTTP/1.1 only is a safe stop-gap."
+      snippets:
+        nginx: "sudo grep -i 'http2' /var/log/nginx/error.log | tail\n# stop-gap: http2 off;   (nginx >= 1.25.1; older: remove 'http2' from the listen line)"
+        apache: "sudo grep -i 'http2' /var/log/apache2/error.log | tail\n# stop-gap: Protocols http/1.1   (restore 'Protocols h2 http/1.1' after the fix)"
+      verify: "Both the HTTP/1.1 and HTTP/2 requests in the matrix succeed."
+  cannot_determine:
+    - "The exact protocol error (server log)."
+  tests:
+    - name: h2 fail
+      given: {status: 200, signals: [h2_fail]}
+      expect: match

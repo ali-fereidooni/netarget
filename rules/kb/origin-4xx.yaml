@@ -1,0 +1,505 @@
+# Origin web server / application 4xx responses on the site root.
+
+- id: http.403.apache
+  title: 403 Forbidden from Apache
+  layer: server
+  severity: fail
+  group: status-403
+  priority: 2
+  match:
+    all:
+      - status: [403]
+      - server: [apache]
+    none:
+      - body: 'Reference(&#32;| )(&#35;|#)\d+(\.|&#46;)[0-9a-f]+'   # Akamai's denial page is akamai.reference-error
+  confidence:
+    base: 0.7
+    boosts:
+      - {when: {signal: mentions_htaccess}, add: 0.1, why: "the error page mentions .htaccess"}
+      - {when: {body: 'You don.t have permission to access'}, add: 0.05, why: "Apache's standard 403 page"}
+  verdict: "Apache refuses to serve the page (403 Forbidden): an access rule, a missing index file or file permissions"
+  causes:
+    - {text: "An .htaccess or vhost rule denies access (Require all denied, Deny from all, an IP/geo rule, or a RewriteRule with the [F] flag).", likelihood: high}
+    - {text: "No index file (index.php / index.html) in the document root and directory listing is disabled.", likelihood: high}
+    - {text: "Apache's user cannot read the files or enter a parent directory (permissions or ownership).", likelihood: medium}
+    - {text: "ModSecurity or a hosting security tool (Imunify360, CSF) blocked the request.", likelihood: medium}
+    - {text: "Hotlink protection or a Referer/User-Agent rule matched.", likelihood: low}
+  fixes:
+    - step: "Read the Apache error log for this request; the log line names the reason."
+      why: "'client denied by server configuration' = an access rule; 'Cannot serve directory: No matching DirectoryIndex' = missing index; 'Permission denied' = permissions; 'ModSecurity: Access denied' = WAF."
+      snippets:
+        apache: "sudo tail -n 50 /var/log/apache2/error.log     # Debian/Ubuntu\nsudo tail -n 50 /var/log/httpd/error_log       # RHEL/CentOS\n# cPanel: /usr/local/apache/logs/error_log or ~/logs/"
+      verify: "You can name which of the causes applies."
+    - step: "If it is an access rule: check every .htaccess from the document root down and the vhost for deny rules; the public directory should allow access."
+      snippets:
+        apache: "# .htaccess in the document root\n<IfModule mod_authz_core.c>\n    Require all granted\n</IfModule>\nDirectoryIndex index.php index.html"
+      verify: "curl -sI https://{host}/ returns 200 after the change."
+    - step: "If the index file is missing: upload index.php/index.html or set DirectoryIndex to the real start file."
+      snippets:
+        apache: "DirectoryIndex index.php index.html"
+      verify: "The home page loads instead of 403."
+    - step: "If it is permissions: give directories 755 and files 644, owned by the site user, so Apache can traverse and read them."
+      snippets:
+        apache: "DOCROOT=/var/www/{host}   # set to your document root\nsudo find \"$DOCROOT\" -type d -exec chmod 755 {} +\nsudo find \"$DOCROOT\" -type f -exec chmod 644 {} +\nsudo chmod 640 \"$DOCROOT\"/wp-config.php \"$DOCROOT\"/.env 2>/dev/null   # keep secrets private\nsudo chown -R siteuser:www-data \"$DOCROOT\"   # adjust user/group to your setup"
+      verify: "namei -l /var/www/{host}/index.php shows read access for Apache's user on every component."
+    - step: "If ModSecurity blocked it: note the id of the rule that matched in the audit log and add a narrow exception for that rule and path instead of switching the engine off."
+      snippets:
+        apache: "<LocationMatch \"^/path/that/is/blocked\">\n    # the id of the rule that matched (from the audit log), e.g. 942100.\n    # Never 949110/959100: they only add up anomaly scores; removing them disables all blocking here.\n    SecRuleRemoveById 942100\n</LocationMatch>"
+      verify: "The request passes and the audit log shows no new block for that rule."
+  warnings:
+    - "Do not make files or directories world-writable (mode 777) to 'fix' a 403: it does not help Apache read files and lets any local process modify your site."
+  cannot_determine:
+    - "The Apache error log line (the definitive reason)."
+    - "File permissions and ownership on the server."
+  tests:
+    - name: apache 403
+      given: {status: 403, server: apache, body: "<h1>Forbidden</h1><p>You don't have permission to access this resource.</p><address>Apache/2.4.58 Server at example.com Port 443</address>"}
+      expect: match
+      min_confidence: 0.75
+    - name: nginx 403 is not this rule
+      given: {status: 403, server: nginx}
+      expect: no_match
+
+- id: http.403.nginx
+  title: 403 Forbidden from nginx
+  layer: server
+  severity: fail
+  group: status-403
+  priority: 2
+  match:
+    all:
+      - status: [403]
+      - server: [nginx]
+    none:
+      - body: 'Reference(&#32;| )(&#35;|#)\d+(\.|&#46;)[0-9a-f]+'   # Akamai's denial page is akamai.reference-error
+  confidence: {base: 0.7}
+  verdict: "nginx refuses to serve the page (403 Forbidden): a deny rule, a missing index file or file permissions"
+  causes:
+    - {text: "No index file and autoindex is off ('directory index of ... is forbidden').", likelihood: high}
+    - {text: "A deny/allow rule in the server or location block.", likelihood: high}
+    - {text: "nginx's user cannot read the file or traverse a parent directory (permissions, or SELinux labels on RHEL).", likelihood: medium}
+  fixes:
+    - step: "Read nginx's error log; it states the reason for the 403."
+      snippets:
+        nginx: "sudo tail -n 50 /var/log/nginx/error.log"
+      verify: "The log shows 'directory index ... is forbidden', 'access forbidden by rule', or 'Permission denied'."
+    - step: "Missing index: add the index file or the right index directive."
+      snippets:
+        nginx: "server {\n    root /var/www/{host};\n    index index.php index.html;\n}"
+      verify: "sudo nginx -t && sudo systemctl reload nginx; the home page returns 200."
+    - step: "Deny rule: remove or narrow the deny in the matching location block."
+      snippets:
+        nginx: "location / {\n    # allow 203.0.113.0/24;   remove or adjust old allow/deny lines\n    try_files $uri $uri/ /index.php?$args;\n}"
+      verify: "curl -sI https://{host}/ returns 200."
+    - step: "Permissions: directories 755, files 644, readable by nginx's user; on SELinux systems restore the web labels."
+      snippets:
+        nginx: "DOCROOT=/var/www/{host}   # set to your document root\nsudo find \"$DOCROOT\" -type d -exec chmod 755 {} +\nsudo find \"$DOCROOT\" -type f -exec chmod 644 {} +\nsudo restorecon -Rv \"$DOCROOT\"    # RHEL/Fedora with SELinux"
+      verify: "namei -l /var/www/{host}/index.html shows read access for the nginx user."
+  warnings:
+    - "Do not use world-writable permissions (mode 777) or disable SELinux to fix a 403."
+  cannot_determine:
+    - "The nginx error log line and the server's file permissions."
+  tests:
+    - name: nginx 403
+      given: {status: 403, server: nginx, body: "<center><h1>403 Forbidden</h1></center><hr><center>nginx</center>"}
+      expect: match
+
+- id: http.403.litespeed
+  title: 403 Forbidden from LiteSpeed
+  layer: server
+  severity: fail
+  group: status-403
+  priority: 2
+  match:
+    all:
+      - status: [403]
+      - server: [litespeed]
+    none:
+      - body: 'Reference(&#32;| )(&#35;|#)\d+(\.|&#46;)[0-9a-f]+'   # Akamai's denial page is akamai.reference-error
+  confidence: {base: 0.7}
+  verdict: "LiteSpeed refuses to serve the page (403 Forbidden): an .htaccess rule, missing index, permissions or a security module"
+  causes:
+    - {text: "An .htaccess deny/rewrite rule (LiteSpeed reads Apache-style .htaccess).", likelihood: high}
+    - {text: "Imunify360/ModSecurity on the hosting account blocked the request.", likelihood: medium}
+    - {text: "Missing index file or unreadable files.", likelihood: medium}
+  fixes:
+    - step: "Check the LiteSpeed error log (or cPanel → Errors) for the reason."
+      snippets:
+        litespeed: "sudo tail -n 50 /usr/local/lsws/logs/error.log\n# shared hosting: cPanel → Metrics → Errors"
+      verify: "The log line names the rule or file."
+    - step: "Fix the .htaccess rule, add the index file, or set permissions to 755 for directories and 644 for files."
+      snippets:
+        litespeed: "DirectoryIndex index.php index.html\n# in .htaccess, remove 'Deny from all' / 'Require all denied' for public paths\n# OpenLiteSpeed reads .htaccess rewrites only at start: sudo /usr/local/lsws/bin/lswsctrl restart"
+      verify: "The home page returns 200."
+    - step: "If a security module blocked it, whitelist the specific rule/path in Imunify360 or ModSecurity tools in your panel."
+      verify: "The request passes and the block is not logged again."
+  warnings:
+    - "Do not set permissions to 777; shared hosts often refuse to serve world-writable files (causing 500s)."
+  cannot_determine:
+    - "Server logs and security-module events."
+  tests:
+    - name: litespeed 403
+      given: {status: 403, server: litespeed}
+      expect: match
+
+- id: http.403.iis
+  title: 403 Forbidden from IIS
+  layer: server
+  severity: fail
+  group: status-403
+  priority: 2
+  match:
+    all:
+      - status: [403]
+      - server: [iis]
+    none:
+      - body: 'Reference(&#32;| )(&#35;|#)\d+(\.|&#46;)[0-9a-f]+'   # Akamai's denial page is akamai.reference-error
+  confidence: {base: 0.7}
+  verdict: "IIS refuses to serve the page (403 Forbidden): no default document, IP restrictions or NTFS permissions"
+  causes:
+    - {text: "403.14: no default document and directory browsing is disabled.", likelihood: high}
+    - {text: "IP Address and Domain Restrictions or request filtering blocks the client.", likelihood: medium}
+    - {text: "The application pool identity (IIS_IUSRS) lacks read permission on the folder.", likelihood: medium}
+  fixes:
+    - step: "Find the sub-status (403.x) in the IIS log or enable Failed Request Tracing."
+      snippets:
+        iis: "%SystemDrive%\\inetpub\\logs\\LogFiles\\W3SVC<id>\\   # sc-status and sc-substatus columns"
+      verify: "You know the sub-status (e.g. 403.14, 403.503)."
+    - step: "Add the start page to Default Documents."
+      snippets:
+        iis: "<configuration>\n  <system.webServer>\n    <defaultDocument>\n      <files><add value=\"index.html\" /></files>\n    </defaultDocument>\n  </system.webServer>\n</configuration>"
+      verify: "The home page returns 200."
+    - step: "Grant read permission to the application pool identity on the site folder."
+      snippets:
+        iis: "icacls \"C:\\inetpub\\{host}\" /grant \"IIS_IUSRS:(OI)(CI)RX\""
+      verify: "The page loads; no 403.x in the log."
+  cannot_determine:
+    - "The IIS sub-status code and folder ACLs."
+  tests:
+    - name: iis 403
+      given: {status: 403, server: iis}
+      expect: match
+
+- id: http.403.generic
+  title: 403 Forbidden
+  layer: server
+  severity: fail
+  group: status-403
+  priority: 9
+  match:
+    all:
+      - status: [403]
+    none:
+      - body: 'Reference(&#32;| )(&#35;|#)\d+(\.|&#46;)[0-9a-f]+'   # Akamai's denial page is akamai.reference-error
+  confidence:
+    base: 0.55
+    boosts:
+      - {when: {signal: browser_ua_blocked}, add: 0.15, why: "the browser User-Agent is blocked while others get through, which points to a WAF/bot rule rather than server config"}
+  verdict: "The server refuses to serve the page (403 Forbidden)"
+  causes:
+    - {text: "An access rule (server config, .htaccess, application) denies the request.", likelihood: high}
+    - {text: "A firewall/WAF or security plugin blocks this client, IP range or country.", likelihood: medium}
+    - {text: "A missing index file with directory listing disabled, or unreadable files.", likelihood: medium}
+  fixes:
+    - step: "Check the web server error log for the exact reason, then fix that rule, file or permission."
+      snippets:
+        apache: "sudo tail -n 50 /var/log/apache2/error.log"
+        nginx: "sudo tail -n 50 /var/log/nginx/error.log"
+        litespeed: "sudo tail -n 50 /usr/local/lsws/logs/error.log"
+        iis: "%SystemDrive%\\inetpub\\logs\\LogFiles\\"
+      verify: "curl -sI https://{host}/ returns 200."
+    - step: "If curl or Googlebot get through while the browser User-Agent gets 403, look at WAF/bot settings rather than file permissions."
+      verify: "The matrix shows the same status for all User-Agents after the change."
+  warnings:
+    - "Never fix a 403 with world-writable permissions (777) or by switching off the WAF entirely."
+  cannot_determine:
+    - "Which web server answered (not identifiable) and its logs."
+  tests:
+    - name: plain 403
+      given: {status: 403}
+      expect: match
+
+- id: http.ua-block-origin
+  title: The origin blocks some User-Agents
+  layer: application
+  severity: warn
+  group: ua-block
+  priority: 2
+  match:
+    all:
+      - signal: ua_dependent_block
+      - cdn: [none]
+  confidence: {base: 0.7}
+  verdict: "Your server answers browsers but blocks other clients (curl or search-engine bots), so it is a security rule, not a broken site"
+  causes:
+    - {text: "A WAF or security plugin (ModSecurity, Imunify360, Wordfence, fail2ban) blocks non-browser User-Agents.", likelihood: high}
+    - {text: "A rewrite/deny rule matches the User-Agent string.", likelihood: medium}
+  fixes:
+    - step: "Find the block in the WAF/security plugin log and allow legitimate clients (search engines, monitoring)."
+      snippets:
+        apache: "grep -i 'ModSecurity' /var/log/apache2/error.log | tail\ngrep -i 'HTTP_USER_AGENT' .htaccess"
+        nginx: "grep -n 'http_user_agent' /etc/nginx/sites-enabled/*"
+        wordpress: "Wordfence → Tools → Live Traffic: check blocked requests"
+      verify: "The Googlebot-like request returns the same status as the browser request."
+  warnings:
+    - "Blocking scrapers can be intended; only relax rules for clients you want."
+  cannot_determine:
+    - "Whether real search-engine crawlers (verified by reverse DNS) are blocked too."
+  tests:
+    - name: origin ua block
+      given: {status: 200, cdn: none, signals: [ua_dependent_block]}
+      expect: match
+
+- id: http.400
+  title: 400 Bad Request
+  layer: server
+  severity: fail
+  group: status-400
+  match:
+    all:
+      - status: [400, 431]
+  confidence:
+    base: 0.6
+    boosts:
+      - {when: {body: 'Request Header Or Cookie Too Large|Request Header Fields Too Large|Size of a request header field exceeds'}, add: 0.25, why: "the server says headers or cookies are too large"}
+      - {when: {body: 'plain HTTP request was sent to HTTPS port'}, add: 0.25, why: "plain HTTP reached the HTTPS port"}
+  verdict: "The server rejects the request as malformed (HTTP {status})"
+  causes:
+    - {text: "Cookies or headers are larger than the server allows (often many cookies on one domain).", likelihood: medium}
+    - {text: "Plain HTTP sent to the HTTPS port (wrong port in a redirect or CDN origin setting).", likelihood: medium}
+    - {text: "The application rejects the Host header (not in its allowed hosts list, e.g. Django/Laravel trusted hosts).", likelihood: medium}
+  fixes:
+    - step: "If cookies/headers are too large: reduce cookies set by the site, or raise the header buffer moderately."
+      snippets:
+        nginx: "large_client_header_buffers 4 16k;"
+        apache: "LimitRequestFieldSize 16380"
+      verify: "The page loads in a browser with existing cookies; clearing cookies is not needed."
+    - step: "If plain HTTP hits port 443: fix the redirect or CDN origin port so HTTPS goes to 443 and HTTP to 80."
+      verify: "curl -sI http://{host}/ redirects to https and https returns 200."
+    - step: "If the app rejects the host name: add {host} to the allowed hosts setting."
+      snippets:
+        any: "Django: ALLOWED_HOSTS = ['{host}', 'www.{host}']\nLaravel: APP_URL=https://{host}"
+      verify: "The site returns 200 for {host}."
+  cannot_determine:
+    - "The exact header the server considered invalid (only in its logs)."
+  tests:
+    - name: cookie too large
+      given: {status: 400, body: "<h1>400 Bad Request</h1>Request Header Or Cookie Too Large"}
+      expect: match
+      min_confidence: 0.85
+    - name: 431
+      given: {status: 431}
+      expect: match
+
+- id: http.401
+  title: 401 Unauthorized at the site root
+  layer: application
+  severity: fail
+  match:
+    all:
+      - status: [401]
+  confidence:
+    base: 0.75
+    boosts:
+      - {when: {header: {name: www-authenticate, regex: 'Basic'}}, add: 0.15, why: "HTTP Basic authentication is enabled"}
+  verdict: "The whole site asks for a username and password (HTTP 401)"
+  causes:
+    - {text: "Password protection (Basic auth) left on from staging or maintenance.", likelihood: high}
+    - {text: "The application requires login even for the home page.", likelihood: medium}
+  fixes:
+    - step: "If the site should be public, remove the password protection for the public paths."
+      snippets:
+        apache: "# remove or scope to a sub-directory in .htaccess:\n# AuthType Basic\n# AuthUserFile /path/.htpasswd\n# Require valid-user"
+        nginx: "# remove from the server/location block:\n# auth_basic \"Restricted\";\n# auth_basic_user_file /etc/nginx/.htpasswd;"
+      verify: "curl -sI https://{host}/ returns 200 without credentials."
+  cannot_determine:
+    - "Whether the protection is intended (e.g. a private staging site)."
+  tests:
+    - name: basic auth
+      given: {status: 401, headers: {www-authenticate: ['Basic realm="Restricted"']}}
+      expect: match
+      min_confidence: 0.9
+
+- id: http.404.root
+  title: 404 Not Found on the home page
+  layer: server
+  severity: fail
+  match:
+    all:
+      - status: [404]
+  confidence: {base: 0.7}
+  verdict: "The home page itself returns 404: the server answers but finds no site content for {host}"
+  causes:
+    - {text: "The virtual host's document root points to the wrong or an empty directory.", likelihood: high}
+    - {text: "The request lands on another (default) virtual host because {host} is not in ServerName/server_name.", likelihood: high}
+    - {text: "The application's routing has no route for '/' (or the front controller is missing).", likelihood: medium}
+  fixes:
+    - step: "Make sure the virtual host lists {host} and www.{host} and points to the directory that holds index.php/index.html."
+      snippets:
+        apache: "<VirtualHost *:443>\n    ServerName {host}\n    ServerAlias www.{host}\n    DocumentRoot /var/www/{host}/public\n</VirtualHost>"
+        nginx: "server {\n    server_name {host} www.{host};\n    root /var/www/{host}/public;\n    index index.php index.html;\n}"
+        iis: "IIS Manager → Sites → {host} → Basic Settings → Physical path; Bindings include {host}"
+      verify: "curl -sI https://{host}/ returns 200."
+    - step: "For frameworks (Laravel, Symfony), the document root must be the public/ folder and rewrites must route to index.php."
+      applies_to: [laravel, php]
+      snippets:
+        nginx: "location / { try_files $uri $uri/ /index.php?$query_string; }"
+        apache: "RewriteEngine On\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule ^ index.php [L]"
+      verify: "Routes other than / also work."
+  cannot_determine:
+    - "The server's virtual host configuration and file layout."
+  tests:
+    - name: root 404
+      given: {status: 404, server: nginx}
+      expect: match
+
+- id: http.405
+  title: 405 Method Not Allowed for GET
+  layer: application
+  severity: fail
+  match:
+    all:
+      - status: [405]
+  confidence: {base: 0.65}
+  verdict: "The server refuses a normal GET of the home page (405 Method Not Allowed)"
+  causes:
+    - {text: "The application routes / only for other methods (e.g. POST) or a framework route is misconfigured.", likelihood: high}
+    - {text: "A WAF or proxy restricts methods incorrectly.", likelihood: low}
+  fixes:
+    - step: "Check the application's route definition for '/' and allow GET (and HEAD)."
+      verify: "curl -sI https://{host}/ returns 200 and curl -s https://{host}/ shows the page."
+  cannot_determine:
+    - "The application's routing code."
+  tests:
+    - name: 405
+      given: {status: 405}
+      expect: match
+
+- id: http.head-differs
+  title: HEAD requests behave differently from GET
+  layer: application
+  severity: info
+  match:
+    all:
+      - signal: head_differs
+  confidence: {base: 0.7}
+  verdict: "HEAD requests get a different status than GET; some monitors and link checkers use HEAD and will report the site as down"
+  causes:
+    - {text: "The application or framework does not route HEAD for this URL.", likelihood: high}
+  fixes:
+    - step: "Allow HEAD wherever GET is allowed (most frameworks do this automatically; custom routers may not)."
+      verify: "curl -sI https://{host}/ returns the same status class as curl -s -o /dev/null -w '%{http_code}' https://{host}/"
+  cannot_determine:
+    - "Whether any of your monitors use HEAD."
+  tests:
+    - name: head differs
+      given: {status: 200, signals: [head_differs]}
+      expect: match
+
+- id: http.408
+  title: 408 Request Timeout
+  layer: network
+  severity: fail
+  match:
+    all:
+      - status: [408]
+  confidence: {base: 0.6}
+  verdict: "The server closed the connection because the request arrived too slowly (408)"
+  causes:
+    - {text: "A slow or lossy network path between the client and the server.", likelihood: medium}
+    - {text: "Very short client header/body timeouts on the server or load balancer.", likelihood: medium}
+  fixes:
+    - step: "Check the server's request timeouts and the load balancer's idle timeout."
+      snippets:
+        nginx: "client_header_timeout 30s;\nclient_body_timeout 30s;"
+        apache: "RequestReadTimeout header=20-40,MinRate=500 body=20,MinRate=500"
+      verify: "Requests from all nodes complete without 408."
+  cannot_determine:
+    - "Packet loss inside your hosting network."
+  tests:
+    - name: 408
+      given: {status: 408}
+      expect: match
+
+- id: http.413
+  title: 413 Payload Too Large
+  layer: server
+  severity: warn
+  match:
+    all:
+      - status: [413]
+  confidence: {base: 0.7}
+  verdict: "The server rejects the request body as too large (413)"
+  causes:
+    - {text: "Upload/body size limits are lower than what the site needs (forms, uploads, APIs).", likelihood: high}
+  fixes:
+    - step: "Raise the body size limit to what the application really needs (in the web server and in PHP)."
+      snippets:
+        nginx: "client_max_body_size 64m;"
+        apache: "LimitRequestBody 67108864"
+        php: "upload_max_filesize = 64M\npost_max_size = 64M"
+        iis: "<system.webServer>
+  <security>
+    <requestFiltering>
+      <requestLimits maxAllowedContentLength=\"67108864\" />
+    </requestFiltering>
+  </security>
+</system.webServer>"
+      verify: "The upload or form submission succeeds with a file of the expected size."
+  cannot_determine:
+    - "Which form or upload triggers it (our checks only send GET/HEAD)."
+  tests:
+    - name: 413
+      given: {status: 413}
+      expect: match
+
+- id: http.414
+  title: 414 URI Too Long
+  layer: application
+  severity: fail
+  match:
+    all:
+      - status: [414]
+  confidence: {base: 0.65}
+  verdict: "The server rejects the URL as too long (414), usually a redirect that keeps appending parameters"
+  causes:
+    - {text: "A redirect rule appends the query string or path repeatedly.", likelihood: high}
+    - {text: "Very large URLs generated by the application (state in the query string).", likelihood: medium}
+  fixes:
+    - step: "Inspect the redirect chain and fix the rule that appends parameters each time."
+      verify: "The redirect chain ends at a normal URL."
+  cannot_determine:
+    - "The application code that builds the URL."
+  tests:
+    - name: 414
+      given: {status: 414}
+      expect: match
+
+- id: http.429
+  title: 429 Too Many Requests from the origin
+  layer: application
+  severity: warn
+  match:
+    all:
+      - status: [429]
+    none:
+      - body: 'Error 1015|error code: 1015|You are being rate limited'   # Cloudflare's page is cf.1015
+  confidence:
+    base: 0.75
+    boosts:
+      - {when: {signal: retry_after}, add: 0.1, why: "the server says when to retry"}
+  verdict: "The site is rate limiting requests (429 Too Many Requests)"
+  causes:
+    - {text: "A rate limit in the web server, application or security plugin is too low or shared by many users behind one IP.", likelihood: high}
+    - {text: "The hosting account hit its resource limits (shared hosting).", likelihood: medium}
+  fixes:
+    - step: "Review rate-limit settings and set them per client with sensible bursts."
+      snippets:
+        nginx: "limit_req_zone $binary_remote_addr zone=site:10m rate=20r/s;\nlimit_req zone=site burst=40 nodelay;"
+      verify: "Normal browsing does not trigger 429."
+  cannot_determine:
+    - "Whether the limit applies only to our measurement nodes."
+  tests:
+    - name: 429
+      given: {status: 429, signals: [retry_after]}
+      expect: match

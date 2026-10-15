@@ -5,7 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/http"
 	"net/netip"
+	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -122,8 +125,127 @@ func (l *Local) Probe(ctx context.Context, req ProbeRequest) (*ProbeResponse, er
 	return out, nil
 }
 
+// validSpec enforces the matrix policy: read-only methods, fixed UAs, known
+// protocols, http(s) URLs, and a public origin IP (re-checked here, not
+// trusted from the master).
+func (l *Local) validSpec(s ReqSpec) error {
+	if s.Method != http.MethodGet && s.Method != http.MethodHead {
+		return ErrInvalidRequest
+	}
+	if _, ok := UserAgents[s.UA]; !ok && s.UA != "" {
+		return ErrInvalidRequest
+	}
+	if s.Proto != "" && s.Proto != "auto" && s.Proto != "h1" && s.Proto != "h2" {
+		return ErrInvalidRequest
+	}
+	u, err := url.Parse(s.URL)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" {
+		return ErrInvalidRequest
+	}
+	if s.OriginIP.IsValid() {
+		return l.checkIPs([]netip.Addr{s.OriginIP})
+	}
+	return nil
+}
+
+func (l *Local) prober() HTTPProber {
+	p := l.HTTPProber
+	p.AllowLoopback = p.AllowLoopback || l.AllowLoopback
+	if l.AllowLoopback && p.PortMap == nil && l.PortMap != nil {
+		p.PortMap = map[string]string{}
+		for k, v := range l.PortMap {
+			p.PortMap[fmt.Sprint(k)] = fmt.Sprint(v)
+		}
+	}
+	return p
+}
+
 func (l *Local) HTTP(ctx context.Context, req HTTPRequest) (*HTTPResponse, error) {
-	if len(req.URLs) == 0 || len(req.URLs) > 6 {
+	if len(req.URLs) > 6 || len(req.Specs) > MaxSpecs || len(req.URLs)+len(req.Specs) == 0 {
+		return nil, ErrInvalidRequest
+	}
+	for _, ips := range req.Pinned {
+		if err := l.checkIPs(ips); err != nil {
+			return nil, err
+		}
+	}
+	for _, s := range req.Specs {
+		if err := l.validSpec(s); err != nil {
+			return nil, err
+		}
+	}
+	// Server-side deadline, shorter than the master's client timeout, so a
+	// slow site cannot make the whole call look like a dead agent.
+	ctx, cancel := context.WithTimeout(ctx, 40*time.Second)
+	defer cancel()
+	rel, err := l.acquire(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer rel()
+	p := l.prober()
+	limit := req.MaxHops
+	if limit <= 0 || limit > maxHops {
+		limit = maxHops
+	}
+	// Run chains in parallel (bounded); each is independent.
+	out := &HTTPResponse{Chains: make([]Chain, len(req.URLs)), Results: make([]SpecResult, len(req.Specs))}
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, 6)
+	for i, u := range req.URLs {
+		wg.Add(1)
+		go func(i int, u string) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			out.Chains[i] = p.chain(ctx, u, req.Pinned, limit, HopOpts{})
+		}(i, u)
+	}
+	for i, s := range req.Specs {
+		wg.Add(1)
+		go func(i int, s ReqSpec) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			o := HopOpts{Method: s.Method, UA: s.UA, Proto: s.Proto, Compress: s.Compress, OriginIP: s.OriginIP, Sample: s.Sample, Site: siteOfURL(s.URL)}
+			out.Results[i] = SpecResult{Spec: s, Chain: p.chain(ctx, s.URL, req.Pinned, limit, o)}
+		}(i, s)
+	}
+	wg.Wait()
+	enforceSampleBudget(out.Results, MaxSampleBudget)
+	return out, nil
+}
+
+// enforceSampleBudget keeps body samples only on final hops and trims them
+// so one call never returns more than budget bytes of page content.
+func enforceSampleBudget(rs []SpecResult, budget int) {
+	used := 0
+	for i := range rs {
+		hops := rs[i].Chain.Hops
+		for j := range hops {
+			if j < len(hops)-1 {
+				hops[j].BodySample = ""
+				continue
+			}
+			s := hops[j].BodySample
+			if used+len(s) > budget {
+				keep := budget - used
+				if keep < 0 {
+					keep = 0
+				}
+				s = strings.ToValidUTF8(s[:keep], "")
+			}
+			hops[j].BodySample = s
+			used += len(s)
+		}
+	}
+}
+
+// Resources fetches a page and checks its subresources. Every subresource
+// host is resolved through safenet by the prober (never via the master).
+func (l *Local) Resources(ctx context.Context, req ResourceRequest) (*ResourceResponse, error) {
+	u, err := url.Parse(req.PageURL)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" || req.Max > MaxResources {
 		return nil, ErrInvalidRequest
 	}
 	for _, ips := range req.Pinned {
@@ -136,27 +258,8 @@ func (l *Local) HTTP(ctx context.Context, req HTTPRequest) (*HTTPResponse, error
 		return nil, err
 	}
 	defer rel()
-	p := l.HTTPProber
-	p.AllowLoopback = p.AllowLoopback || l.AllowLoopback
-	if l.AllowLoopback && p.PortMap == nil && l.PortMap != nil {
-		p.PortMap = map[string]string{}
-		for k, v := range l.PortMap {
-			p.PortMap[fmt.Sprint(k)] = fmt.Sprint(v)
-		}
-	}
-	// Run chains in parallel; each is independent.
-	out := &HTTPResponse{Chains: make([]Chain, len(req.URLs))}
-	var wg sync.WaitGroup
-	for i, u := range req.URLs {
-		wg.Add(1)
-		go func(i int, u string) {
-			defer wg.Done()
-			r := p.Run(ctx, HTTPRequest{URLs: []string{u}, Pinned: req.Pinned, MaxHops: req.MaxHops})
-			out.Chains[i] = r.Chains[0]
-		}(i, u)
-	}
-	wg.Wait()
-	return out, nil
+	p := l.prober()
+	return p.CheckResources(ctx, req), nil
 }
 
 func (l *Local) Traceroute(ctx context.Context, ip netip.Addr, maxHops int, line func(string)) error {
@@ -173,4 +276,12 @@ func (l *Local) Traceroute(ctx context.Context, ip netip.Addr, maxHops int, line
 		tr = Traceroute
 	}
 	return tr(ctx, ip, maxHops, line)
+}
+
+func siteOfURL(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return ""
+	}
+	return siteOf(u.Hostname())
 }

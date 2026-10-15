@@ -1,0 +1,32 @@
+# "Fake CDN" for the demo: imitates Cloudflare edge responses (headers and
+# error pages) so the CDN rules can be exercised locally. Not a real CDN.
+{
+    auto_https off
+    admin off
+}
+
+:80 {
+    header Server cloudflare
+    header CF-RAY "8c1d2e3f4a5b6c7d-FRA"
+    header CF-Cache-Status DYNAMIC
+
+    @c525 host cdn-525.ddemo-site.com
+    handle @c525 {
+        header Content-Type "text/html; charset=UTF-8"
+        respond "<!DOCTYPE html><html><head><title>cdn-525.ddemo-site.com | 525: SSL handshake failed</title></head><body><h1>SSL handshake failed</h1><span>Error code 525</span><p>Cloudflare is unable to establish an SSL connection to the origin server.</p><p>Cloudflare Ray ID: 8c1d2e3f4a5b6c7d</p></body></html>" 525
+    }
+
+    @c521 host cdn-521.ddemo-site.com
+    handle @c521 {
+        header Content-Type "text/html; charset=UTF-8"
+        respond "<!DOCTYPE html><html><head><title>cdn-521.ddemo-site.com | 521: Web server is down</title></head><body><h1>Web server is down</h1><span>Error code 521</span><p>Cloudflare Ray ID: 8c1d2e3f4a5b6c7e</p></body></html>" 521
+    }
+
+    @loop host cdn-loop.ddemo-site.com
+    handle @loop {
+        # Flexible-SSL style loop: every request is sent to https again.
+        redir https://cdn-loop.ddemo-site.com{uri} 301
+    }
+
+    respond "unknown demo host" 404
+}

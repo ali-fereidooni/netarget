@@ -1,5 +1,5 @@
 {
-  "request_id": "bef6c6b9afde5de12814fa397f9ff546ce1844d4",
+  "request_id": "1476c2292fe05d4b49b874b2d2e9a5153fc4b9fc",
   "domain": {
     "input": "https://WWW.Expired-Shop.com/cart",
     "name": "expired-shop.com",
@@ -7,8 +7,8 @@
     "apex": "expired-shop.com"
   },
   "status": "done",
-  "started_at": "2026-10-14T20:46:38.378432Z",
-  "finished_at": "2026-10-14T20:46:38.382075Z",
+  "started_at": "2026-10-15T01:28:05.9548194Z",
+  "finished_at": "2026-10-15T01:28:05.9579789Z",
   "nodes": [
     {
       "id": "fra1",
@@ -31,8 +31,8 @@
         {
           "code": "reg.expired",
           "severity": "fail",
-          "message": "The domain expired 13 day(s) ago (2026-10-02).",
-          "evidence": "expiry date 2026-10-02"
+          "message": "The domain expired 13 day(s) ago (2026-10-03).",
+          "evidence": "expiry date 2026-10-03"
         },
         {
           "code": "reg.auto_renew_grace",
@@ -46,10 +46,10 @@
         "registered": true,
         "info": {
           "source": "rdap",
-          "server": "127.0.0.1:60158",
+          "server": "127.0.0.1:64176",
           "registrar": "Demo Registrar Ltd.",
-          "created": "2025-10-02T20:46:38Z",
-          "expires": "2026-10-02T20:46:38Z",
+          "created": "2025-10-03T01:28:05Z",
+          "expires": "2026-10-03T01:28:05Z",
           "status": [
             "autoRenewPeriod",
             "clientTransferProhibited"
@@ -57,7 +57,7 @@
         },
         "days_left": -13
       },
-      "started_at": "2026-10-14T20:46:38.378432Z",
+      "started_at": "2026-10-15T01:28:05.9548194Z",
       "duration_ms": 0
     },
     {
@@ -109,7 +109,8 @@
                 "ip": "4.0.0.1",
                 "status": "lame",
                 "rcode": "REFUSED",
-                "aa": false
+                "aa": false,
+                "rtt_ms": 0.532
               }
             ]
           },
@@ -125,14 +126,14 @@
                 "status": "lame",
                 "rcode": "REFUSED",
                 "aa": false,
-                "rtt_ms": 0.504
+                "rtt_ms": 0.532
               }
             ]
           }
         ]
       },
-      "started_at": "2026-10-14T20:46:38.3789695Z",
-      "duration_ms": 3
+      "started_at": "2026-10-15T01:28:05.9553337Z",
+      "duration_ms": 2
     },
     {
       "layer": "zone",
@@ -140,7 +141,7 @@
       "status": "SKIPPED",
       "summary": "Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)",
       "findings": [],
-      "started_at": "2026-10-14T20:46:38.382075Z",
+      "started_at": "2026-10-15T01:28:05.9579789Z",
       "duration_ms": 0,
       "skip_reason": "Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)"
     },
@@ -150,17 +151,17 @@
       "status": "SKIPPED",
       "summary": "Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)",
       "findings": [],
-      "started_at": "2026-10-14T20:46:38.382075Z",
+      "started_at": "2026-10-15T01:28:05.9579789Z",
       "duration_ms": 0,
       "skip_reason": "Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)"
     },
     {
       "layer": "web",
-      "title": "Web server",
+      "title": "Website load",
       "status": "SKIPPED",
       "summary": "Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)",
       "findings": [],
-      "started_at": "2026-10-14T20:46:38.382075Z",
+      "started_at": "2026-10-15T01:28:05.9579789Z",
       "duration_ms": 0,
       "skip_reason": "Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)"
     }
@@ -172,8 +173,8 @@
       "code": "reg.expired",
       "layer": "registration",
       "title": "The domain registration has expired",
-      "explanation": "The domain expired 13 day(s) ago (2026-10-02).",
-      "evidence": "expiry date 2026-10-02"
+      "explanation": "The domain expired 13 day(s) ago (2026-10-03).",
+      "evidence": "expiry date 2026-10-03"
     },
     "other_causes": [],
     "symptoms": [
@@ -210,7 +211,7 @@
       {
         "code": "skipped",
         "layer": "web",
-        "message": "Web server was not checked: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)",
+        "message": "Website load was not checked: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)",
         "explained_by": "reg.expired"
       }
     ],

@@ -1,0 +1,1028 @@
+{
+  "request_id": "0ca49ef589f35ec114200847b692efe9fbd386a5",
+  "domain": {
+    "input": "cdn-loop.ddemo-site.com",
+    "name": "cdn-loop.ddemo-site.com",
+    "unicode": "cdn-loop.ddemo-site.com",
+    "apex": "ddemo-site.com"
+  },
+  "status": "done",
+  "started_at": "2026-10-15T01:28:07.2019237Z",
+  "finished_at": "2026-10-15T01:28:07.2800806Z",
+  "nodes": [
+    {
+      "id": "fra1",
+      "name": "Frankfurt",
+      "location": "DE (demo)"
+    },
+    {
+      "id": "thr1",
+      "name": "Tehran",
+      "location": "IR (demo)"
+    }
+  ],
+  "layers": [
+    {
+      "layer": "registration",
+      "title": "Domain registration",
+      "status": "OK",
+      "summary": "Registered with Demo Registrar Ltd., 199 days left",
+      "findings": [
+        {
+          "code": "reg.ok",
+          "severity": "info",
+          "message": "Registered until 2027-05-03 (199 days left)."
+        }
+      ],
+      "details": {
+        "domain": "ddemo-site.com",
+        "registered": true,
+        "info": {
+          "source": "rdap",
+          "server": "127.0.0.1:64244",
+          "registrar": "Demo Registrar Ltd.",
+          "created": "2025-09-10T01:28:06Z",
+          "expires": "2027-05-03T01:28:06Z",
+          "status": [
+            "clientTransferProhibited"
+          ]
+        },
+        "days_left": 199
+      },
+      "started_at": "2026-10-15T01:28:07.2019237Z",
+      "duration_ms": 0
+    },
+    {
+      "layer": "nameservers",
+      "title": "Name servers",
+      "status": "OK",
+      "summary": "2 name server(s) delegated by com, 2 of 2 addresses answer authoritatively",
+      "findings": [],
+      "details": {
+        "delegation": {
+          "parent": "com.",
+          "parent_server": "2.0.0.1",
+          "ns": [
+            "ns1.ddemo-site.com.",
+            "ns2.ddemo-dns.net."
+          ],
+          "glue": {
+            "ns1.ddemo-site.com.": [
+              "3.0.0.1"
+            ]
+          },
+          "nxdomain": false,
+          "no_delegation": false,
+          "co_hosted": false
+        },
+        "servers": [
+          {
+            "name": "ns1.ddemo-site.com.",
+            "in_bailiwick": true,
+            "glue": [
+              "3.0.0.1"
+            ],
+            "addrs": [
+              "3.0.0.1"
+            ],
+            "probes": [
+              {
+                "ip": "3.0.0.1",
+                "status": "ok",
+                "rcode": "NOERROR",
+                "aa": true,
+                "rtt_ms": 0.584,
+                "serial": 1,
+                "ns": [
+                  "ns1.ddemo-site.com.",
+                  "ns2.ddemo-dns.net."
+                ]
+              }
+            ]
+          },
+          {
+            "name": "ns2.ddemo-dns.net.",
+            "in_bailiwick": false,
+            "addrs": [
+              "3.0.1.1"
+            ],
+            "probes": [
+              {
+                "ip": "3.0.1.1",
+                "status": "ok",
+                "rcode": "NOERROR",
+                "aa": true,
+                "rtt_ms": 0.584,
+                "serial": 1,
+                "ns": [
+                  "ns1.ddemo-site.com.",
+                  "ns2.ddemo-dns.net."
+                ]
+              }
+            ]
+          }
+        ],
+        "child_ns": [
+          "ns1.ddemo-site.com.",
+          "ns2.ddemo-dns.net."
+        ]
+      },
+      "started_at": "2026-10-15T01:28:07.2024614Z",
+      "duration_ms": 8
+    },
+    {
+      "layer": "zone",
+      "title": "DNS zone",
+      "status": "OK",
+      "summary": "5 records from ns1.ddemo-site.com. (3.0.0.1)",
+      "findings": [
+        {
+          "code": "dns.no_www",
+          "severity": "info",
+          "message": "www has no address record; visitors typing www. will get an error."
+        },
+        {
+          "code": "dns.no_ipv6",
+          "severity": "info",
+          "message": "No AAAA (IPv6) record."
+        },
+        {
+          "code": "dns.no_mx",
+          "severity": "info",
+          "message": "No MX record: the domain cannot receive email (fine if intended)."
+        },
+        {
+          "code": "dnssec.unsigned",
+          "severity": "info",
+          "message": "DNSSEC is not enabled for this domain.",
+          "evidence": "no DS at parent"
+        }
+      ],
+      "details": {
+        "queried_server": "ns1.ddemo-site.com. (3.0.0.1)",
+        "records": [
+          {
+            "name": "ddemo-site.com",
+            "type": "NS",
+            "ttl": 3600,
+            "value": "ns1.ddemo-site.com."
+          },
+          {
+            "name": "ddemo-site.com",
+            "type": "NS",
+            "ttl": 3600,
+            "value": "ns2.ddemo-dns.net."
+          },
+          {
+            "name": "ddemo-site.com",
+            "type": "SOA",
+            "ttl": 3600,
+            "value": "ns1.ddemo-site.com. hostmaster.ddemo-site.com. 1 7200 3600 1209600 300"
+          },
+          {
+            "name": "ddemo-site.com",
+            "type": "TXT",
+            "ttl": 3600,
+            "value": "\"v=spf1 -all\""
+          },
+          {
+            "name": "cdn-loop.ddemo-site.com",
+            "type": "A",
+            "ttl": 300,
+            "value": "127.0.0.1"
+          }
+        ],
+        "email": {
+          "spf": {
+            "record": "v=spf1 -all",
+            "records": 1,
+            "lookups": 0,
+            "all": "-"
+          },
+          "dmarc": {
+            "record": "v=DMARC1; p=reject",
+            "policy": "reject"
+          },
+          "dkim_selectors_found": []
+        },
+        "dnssec": {
+          "signed": false,
+          "chain": [
+            "no DS at parent: zone is insecure (unsigned delegation)"
+          ],
+          "valid": false
+        },
+        "propagation": [
+          {
+            "type": "A",
+            "name": "ddemo-site.com",
+            "authoritative": null,
+            "values": [
+              {
+                "value": "(empty)",
+                "count": 1,
+                "resolvers": [
+                  "Resolver (mock)"
+                ]
+              }
+            ],
+            "consistent": true
+          },
+          {
+            "type": "AAAA",
+            "name": "ddemo-site.com",
+            "authoritative": null,
+            "values": [
+              {
+                "value": "(empty)",
+                "count": 1,
+                "resolvers": [
+                  "Resolver (mock)"
+                ]
+              }
+            ],
+            "consistent": true
+          },
+          {
+            "type": "MX",
+            "name": "ddemo-site.com",
+            "authoritative": null,
+            "values": [
+              {
+                "value": "(empty)",
+                "count": 1,
+                "resolvers": [
+                  "Resolver (mock)"
+                ]
+              }
+            ],
+            "consistent": true
+          },
+          {
+            "type": "NS",
+            "name": "ddemo-site.com",
+            "authoritative": [
+              "ns1.ddemo-site.com.",
+              "ns2.ddemo-dns.net."
+            ],
+            "values": [
+              {
+                "value": "ns1.ddemo-site.com.",
+                "count": 1,
+                "resolvers": [
+                  "Resolver (mock)"
+                ]
+              },
+              {
+                "value": "ns2.ddemo-dns.net.",
+                "count": 1,
+                "resolvers": [
+                  "Resolver (mock)"
+                ]
+              }
+            ],
+            "consistent": true
+          }
+        ]
+      },
+      "started_at": "2026-10-15T01:28:07.2107077Z",
+      "duration_ms": 12
+    },
+    {
+      "layer": "reachability",
+      "title": "Reachability",
+      "status": "OK",
+      "summary": "Reachable from 2 of 2 node(s)",
+      "findings": [],
+      "details": {
+        "targets": [
+          "127.0.0.1"
+        ],
+        "rows": [
+          {
+            "node_id": "fra1",
+            "node": "Frankfurt",
+            "location": "DE (demo)",
+            "ip": "127.0.0.1",
+            "family": "IPv4",
+            "sent": 4,
+            "received": 4,
+            "loss": 0,
+            "rtt_min": 0.1,
+            "rtt_avg": 0.2,
+            "rtt_max": 0.3,
+            "tcp_80": "open",
+            "tcp_443": "open",
+            "status": "ok"
+          },
+          {
+            "node_id": "thr1",
+            "node": "Tehran",
+            "location": "IR (demo)",
+            "ip": "127.0.0.1",
+            "family": "IPv4",
+            "sent": 4,
+            "received": 4,
+            "loss": 0,
+            "rtt_min": 0.1,
+            "rtt_avg": 0.2,
+            "rtt_max": 0.3,
+            "tcp_80": "open",
+            "tcp_443": "open",
+            "status": "ok"
+          }
+        ]
+      },
+      "started_at": "2026-10-15T01:28:07.2230683Z",
+      "duration_ms": 1
+    },
+    {
+      "layer": "web",
+      "title": "Website load",
+      "status": "FAIL",
+      "summary": "https://cdn-loop.ddemo-site.com/ → 301 in 18 ms — The site redirects forever: Cloudflare connects to the origin over HTTP while the origin forces HTTPS (Flexible SSL loop)",
+      "findings": [
+        {
+          "code": "load.cf.flexible-loop",
+          "severity": "fail",
+          "message": "The site redirects forever: Cloudflare connects to the origin over HTTP while the origin forces HTTPS (Flexible SSL loop)",
+          "evidence": "GET https://cdn-loop.ddemo-site.com/ → redirect loop after 1 hops; CDN/WAF detected: Cloudflare"
+        }
+      ],
+      "details": {
+        "primary_node": "Frankfurt",
+        "canonical": "GET https://cdn-loop.ddemo-site.com/ (browser)",
+        "verdict": {
+          "text": "The site redirects forever: Cloudflare connects to the origin over HTTP while the origin forces HTTPS (Flexible SSL loop)",
+          "layer": "cdn",
+          "confidence": 0.85,
+          "level": "high",
+          "rule_id": "cf.flexible-loop",
+          "evidence": [
+            "GET https://cdn-loop.ddemo-site.com/ → redirect loop after 1 hops",
+            "CDN/WAF detected: Cloudflare"
+          ],
+          "causes": [
+            {
+              "text": "Cloudflare SSL mode is Flexible, and the origin redirects HTTP to HTTPS, so every request bounces back.",
+              "likelihood": "high"
+            },
+            {
+              "text": "Both a Cloudflare redirect rule and the origin redirect to different canonical hosts (www vs apex).",
+              "likelihood": "medium"
+            }
+          ],
+          "fixes": [
+            {
+              "step": "Install a certificate on the origin and set Cloudflare → SSL/TLS to Full (strict).",
+              "applies_to": [
+                "cloudflare"
+              ],
+              "verify": "curl -sIL https://cdn-loop.ddemo-site.com/ ends with HTTP 200 after at most one redirect."
+            },
+            {
+              "step": "Keep exactly one place that redirects to the canonical URL (either Cloudflare 'Always Use HTTPS' or the origin), not two that disagree.",
+              "snippets": {
+                "apache": "RewriteEngine On\nRewriteCond %{HTTPS} off\nRewriteCond %{HTTP:X-Forwarded-Proto} !https\nRewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]",
+                "nginx": "# only redirect when the original client request was HTTP\nif ($http_x_forwarded_proto = \"http\") { return 301 https://$host$request_uri; }"
+              },
+              "verify": "The redirect chain is http → https → 200 with no repeats."
+            }
+          ],
+          "cannot_determine": [
+            "The Cloudflare SSL mode and redirect rules in your dashboard."
+          ]
+        },
+        "matches": [
+          {
+            "rule_id": "cf.flexible-loop",
+            "title": "Redirect loop caused by Cloudflare Flexible SSL",
+            "layer": "cdn",
+            "severity": "fail",
+            "confidence": 0.85,
+            "level": "high",
+            "verdict": "The site redirects forever: Cloudflare connects to the origin over HTTP while the origin forces HTTPS (Flexible SSL loop)",
+            "evidence": [
+              "GET https://cdn-loop.ddemo-site.com/ → redirect loop after 1 hops",
+              "CDN/WAF detected: Cloudflare"
+            ],
+            "causes": [
+              {
+                "text": "Cloudflare SSL mode is Flexible, and the origin redirects HTTP to HTTPS, so every request bounces back.",
+                "likelihood": "high"
+              },
+              {
+                "text": "Both a Cloudflare redirect rule and the origin redirect to different canonical hosts (www vs apex).",
+                "likelihood": "medium"
+              }
+            ],
+            "fixes": [
+              {
+                "step": "Install a certificate on the origin and set Cloudflare → SSL/TLS to Full (strict).",
+                "applies_to": [
+                  "cloudflare"
+                ],
+                "verify": "curl -sIL https://cdn-loop.ddemo-site.com/ ends with HTTP 200 after at most one redirect."
+              },
+              {
+                "step": "Keep exactly one place that redirects to the canonical URL (either Cloudflare 'Always Use HTTPS' or the origin), not two that disagree.",
+                "snippets": {
+                  "apache": "RewriteEngine On\nRewriteCond %{HTTPS} off\nRewriteCond %{HTTP:X-Forwarded-Proto} !https\nRewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]",
+                  "nginx": "# only redirect when the original client request was HTTP\nif ($http_x_forwarded_proto = \"http\") { return 301 https://$host$request_uri; }"
+                },
+                "verify": "The redirect chain is http → https → 200 with no repeats."
+              }
+            ],
+            "cannot_determine": [
+              "The Cloudflare SSL mode and redirect rules in your dashboard."
+            ],
+            "group": "redirect-loop"
+          }
+        ],
+        "fingerprints": {
+          "cdn": [
+            {
+              "id": "cloudflare",
+              "kind": "cdn",
+              "name": "Cloudflare",
+              "confidence": 0.95,
+              "level": "high",
+              "evidence": [
+                "header cf-ray: 8c1d2e3f4a5b6c7d-FRA (GET http://cdn-loop.ddemo-site.com/)",
+                "header server: cloudflare (GET http://cdn-loop.ddemo-site.com/)",
+                "header cf-cache-status: DYNAMIC (GET http://cdn-loop.ddemo-site.com/)"
+              ]
+            }
+          ],
+          "server": [],
+          "platform": [],
+          "no_cdn": false
+        },
+        "signals": [
+          {
+            "name": "all_nodes_fail",
+            "evidence": "all 2 nodes fail"
+          },
+          {
+            "name": "cache_miss",
+            "evidence": "CDN cache status: dynamic (the request went to the origin)"
+          },
+          {
+            "name": "cdn_detected",
+            "evidence": "Cloudflare (high confidence)"
+          },
+          {
+            "name": "redirect_loop",
+            "evidence": "GET https://cdn-loop.ddemo-site.com/ → redirect loop after 1 hops"
+          }
+        ],
+        "matrix": [
+          {
+            "node": "Frankfurt",
+            "spec": "base:https:cdn-loop.ddemo-site.com",
+            "label": "GET https://cdn-loop.ddemo-site.com/",
+            "url": "https://cdn-loop.ddemo-site.com/",
+            "final_url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "hops": 1,
+            "loop": true,
+            "proto": "HTTP/2.0",
+            "body_size": 0,
+            "ttfb_ms": 18.423,
+            "total_ms": 18.423,
+            "server": "cloudflare"
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "base:http:cdn-loop.ddemo-site.com",
+            "label": "GET http://cdn-loop.ddemo-site.com/",
+            "url": "http://cdn-loop.ddemo-site.com/",
+            "final_url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "hops": 2,
+            "loop": true,
+            "proto": "HTTP/2.0",
+            "body_size": 0,
+            "ttfb_ms": 11.19,
+            "total_ms": 11.19,
+            "server": "cloudflare"
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "head",
+            "label": "HEAD https://cdn-loop.ddemo-site.com/",
+            "url": "https://cdn-loop.ddemo-site.com/",
+            "final_url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "hops": 1,
+            "loop": true,
+            "proto": "HTTP/2.0",
+            "body_size": 0,
+            "ttfb_ms": 20.168,
+            "total_ms": 20.702,
+            "server": "cloudflare"
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "ua:curl",
+            "label": "GET https://cdn-loop.ddemo-site.com/ curl UA",
+            "url": "https://cdn-loop.ddemo-site.com/",
+            "final_url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "hops": 1,
+            "loop": true,
+            "proto": "HTTP/2.0",
+            "body_size": 0,
+            "ttfb_ms": 26.418,
+            "total_ms": 26.951,
+            "server": "cloudflare"
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "ua:googlebot",
+            "label": "GET https://cdn-loop.ddemo-site.com/ googlebot UA",
+            "url": "https://cdn-loop.ddemo-site.com/",
+            "final_url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "hops": 1,
+            "loop": true,
+            "proto": "HTTP/2.0",
+            "body_size": 0,
+            "ttfb_ms": 16.912,
+            "total_ms": 16.912,
+            "server": "cloudflare"
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "proto:h1",
+            "label": "GET https://cdn-loop.ddemo-site.com/ HTTP/1.1",
+            "url": "https://cdn-loop.ddemo-site.com/",
+            "final_url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "hops": 1,
+            "loop": true,
+            "proto": "HTTP/1.1",
+            "body_size": 0,
+            "ttfb_ms": 32.226,
+            "total_ms": 32.745,
+            "server": "cloudflare"
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "proto:h2",
+            "label": "GET https://cdn-loop.ddemo-site.com/ HTTP/2",
+            "url": "https://cdn-loop.ddemo-site.com/",
+            "final_url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "hops": 1,
+            "loop": true,
+            "proto": "HTTP/2.0",
+            "body_size": 0,
+            "ttfb_ms": 28.082,
+            "total_ms": 28.082,
+            "server": "cloudflare"
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "enc:gzip",
+            "label": "GET https://cdn-loop.ddemo-site.com/ gzip",
+            "url": "https://cdn-loop.ddemo-site.com/",
+            "final_url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "hops": 1,
+            "loop": true,
+            "proto": "HTTP/2.0",
+            "body_size": 0,
+            "ttfb_ms": 18.516,
+            "total_ms": 20.117,
+            "server": "cloudflare"
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "enc:identity",
+            "label": "GET https://cdn-loop.ddemo-site.com/ no compression",
+            "url": "https://cdn-loop.ddemo-site.com/",
+            "final_url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "hops": 1,
+            "loop": true,
+            "proto": "HTTP/2.0",
+            "body_size": 0,
+            "ttfb_ms": 20.035,
+            "total_ms": 20.565,
+            "server": "cloudflare"
+          },
+          {
+            "node": "Tehran",
+            "spec": "base:https:cdn-loop.ddemo-site.com",
+            "label": "GET https://cdn-loop.ddemo-site.com/",
+            "url": "https://cdn-loop.ddemo-site.com/",
+            "final_url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "hops": 1,
+            "loop": true,
+            "proto": "HTTP/2.0",
+            "body_size": 0,
+            "ttfb_ms": 17.888,
+            "total_ms": 18.418,
+            "server": "cloudflare"
+          },
+          {
+            "node": "Tehran",
+            "spec": "base:http:cdn-loop.ddemo-site.com",
+            "label": "GET http://cdn-loop.ddemo-site.com/",
+            "url": "http://cdn-loop.ddemo-site.com/",
+            "final_url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "hops": 2,
+            "loop": true,
+            "proto": "HTTP/2.0",
+            "body_size": 0,
+            "ttfb_ms": 16.627,
+            "total_ms": 16.627,
+            "server": "cloudflare"
+          },
+          {
+            "node": "Tehran",
+            "spec": "head",
+            "label": "HEAD https://cdn-loop.ddemo-site.com/",
+            "url": "https://cdn-loop.ddemo-site.com/",
+            "final_url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "hops": 1,
+            "loop": true,
+            "proto": "HTTP/2.0",
+            "body_size": 0,
+            "ttfb_ms": 20.168,
+            "total_ms": 20.702,
+            "server": "cloudflare"
+          },
+          {
+            "node": "Tehran",
+            "spec": "ua:curl",
+            "label": "GET https://cdn-loop.ddemo-site.com/ curl UA",
+            "url": "https://cdn-loop.ddemo-site.com/",
+            "final_url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "hops": 1,
+            "loop": true,
+            "proto": "HTTP/2.0",
+            "body_size": 0,
+            "ttfb_ms": 16.912,
+            "total_ms": 16.912,
+            "server": "cloudflare"
+          },
+          {
+            "node": "Tehran",
+            "spec": "ua:googlebot",
+            "label": "GET https://cdn-loop.ddemo-site.com/ googlebot UA",
+            "url": "https://cdn-loop.ddemo-site.com/",
+            "final_url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "hops": 1,
+            "loop": true,
+            "proto": "HTTP/2.0",
+            "body_size": 0,
+            "ttfb_ms": 18.516,
+            "total_ms": 20.117,
+            "server": "cloudflare"
+          },
+          {
+            "node": "Tehran",
+            "spec": "proto:h1",
+            "label": "GET https://cdn-loop.ddemo-site.com/ HTTP/1.1",
+            "url": "https://cdn-loop.ddemo-site.com/",
+            "final_url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "hops": 1,
+            "loop": true,
+            "proto": "HTTP/1.1",
+            "body_size": 0,
+            "ttfb_ms": 17.37,
+            "total_ms": 17.913,
+            "server": "cloudflare"
+          },
+          {
+            "node": "Tehran",
+            "spec": "proto:h2",
+            "label": "GET https://cdn-loop.ddemo-site.com/ HTTP/2",
+            "url": "https://cdn-loop.ddemo-site.com/",
+            "final_url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "hops": 1,
+            "loop": true,
+            "proto": "HTTP/2.0",
+            "body_size": 0,
+            "ttfb_ms": 29.517,
+            "total_ms": 29.517,
+            "server": "cloudflare"
+          },
+          {
+            "node": "Tehran",
+            "spec": "enc:gzip",
+            "label": "GET https://cdn-loop.ddemo-site.com/ gzip",
+            "url": "https://cdn-loop.ddemo-site.com/",
+            "final_url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "hops": 1,
+            "loop": true,
+            "proto": "HTTP/2.0",
+            "body_size": 0,
+            "ttfb_ms": 18.423,
+            "total_ms": 18.423,
+            "server": "cloudflare"
+          },
+          {
+            "node": "Tehran",
+            "spec": "enc:identity",
+            "label": "GET https://cdn-loop.ddemo-site.com/ no compression",
+            "url": "https://cdn-loop.ddemo-site.com/",
+            "final_url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "hops": 1,
+            "loop": true,
+            "proto": "HTTP/2.0",
+            "body_size": 0,
+            "ttfb_ms": 31.665,
+            "total_ms": 31.665,
+            "server": "cloudflare"
+          }
+        ],
+        "resources": {
+          "page": {
+            "url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "size": 0,
+            "ttfb_ms": 10.222,
+            "found": 0,
+            "checked": 0
+          },
+          "resources": []
+        },
+        "chains": [
+          {
+            "start": "https://cdn-loop.ddemo-site.com/",
+            "hops": [
+              {
+                "url": "https://cdn-loop.ddemo-site.com/",
+                "method": "GET",
+                "proto": "HTTP/2.0",
+                "all_headers": {
+                  "cf-cache-status": [
+                    "DYNAMIC"
+                  ],
+                  "cf-ray": [
+                    "8c1d2e3f4a5b6c7d-FRA"
+                  ],
+                  "content-length": [
+                    "0"
+                  ],
+                  "date": [
+                    "Thu, 15 Oct 2026 01:28:06 GMT"
+                  ],
+                  "location": [
+                    "https://cdn-loop.ddemo-site.com/"
+                  ],
+                  "server": [
+                    "cloudflare"
+                  ]
+                },
+                "body_size": 0,
+                "ip": "127.0.0.1",
+                "status": 301,
+                "status_text": "Moved Permanently",
+                "location": "https://cdn-loop.ddemo-site.com/",
+                "server": "cloudflare",
+                "headers": {
+                  "CF-Ray": "8c1d2e3f4a5b6c7d-FRA",
+                  "Server": "cloudflare"
+                },
+                "timing": {
+                  "dns_ms": 0,
+                  "connect_ms": 1.057,
+                  "tls_ms": 9.578,
+                  "ttfb_ms": 18.423,
+                  "total_ms": 18.423
+                },
+                "tls": {
+                  "version": "TLS 1.3",
+                  "cipher": "TLS_AES_128_GCM_SHA256",
+                  "subject": "*.ddemo-site.com",
+                  "issuer": "Domain Doctor Demo CA",
+                  "not_before": "2026-10-15T00:16:29Z",
+                  "not_after": "2027-01-13T01:16:29Z",
+                  "days_left": 89,
+                  "sans": [
+                    "*.ddemo-site.com",
+                    "ddemo-site.com"
+                  ],
+                  "hostname_match": true,
+                  "chain_valid": true,
+                  "chain_length": 2
+                },
+                "cdn": "Cloudflare"
+              }
+            ],
+            "loop": true
+          },
+          {
+            "start": "http://cdn-loop.ddemo-site.com/",
+            "hops": [
+              {
+                "url": "http://cdn-loop.ddemo-site.com/",
+                "method": "GET",
+                "proto": "HTTP/1.1",
+                "all_headers": {
+                  "cf-cache-status": [
+                    "DYNAMIC"
+                  ],
+                  "cf-ray": [
+                    "8c1d2e3f4a5b6c7d-FRA"
+                  ],
+                  "content-length": [
+                    "0"
+                  ],
+                  "date": [
+                    "Thu, 15 Oct 2026 01:28:06 GMT"
+                  ],
+                  "location": [
+                    "https://cdn-loop.ddemo-site.com/"
+                  ],
+                  "server": [
+                    "cloudflare"
+                  ]
+                },
+                "body_size": 0,
+                "ip": "127.0.0.1",
+                "status": 301,
+                "status_text": "Moved Permanently",
+                "location": "https://cdn-loop.ddemo-site.com/",
+                "server": "cloudflare",
+                "headers": {
+                  "CF-Ray": "8c1d2e3f4a5b6c7d-FRA",
+                  "Server": "cloudflare"
+                },
+                "timing": {
+                  "dns_ms": 0,
+                  "connect_ms": 2.558,
+                  "tls_ms": 0,
+                  "ttfb_ms": 11.661,
+                  "total_ms": 12.18
+                },
+                "cdn": "Cloudflare"
+              },
+              {
+                "url": "https://cdn-loop.ddemo-site.com/",
+                "method": "GET",
+                "proto": "HTTP/2.0",
+                "all_headers": {
+                  "cf-cache-status": [
+                    "DYNAMIC"
+                  ],
+                  "cf-ray": [
+                    "8c1d2e3f4a5b6c7d-FRA"
+                  ],
+                  "content-length": [
+                    "0"
+                  ],
+                  "date": [
+                    "Thu, 15 Oct 2026 01:28:06 GMT"
+                  ],
+                  "location": [
+                    "https://cdn-loop.ddemo-site.com/"
+                  ],
+                  "server": [
+                    "cloudflare"
+                  ]
+                },
+                "body_size": 0,
+                "ip": "127.0.0.1",
+                "status": 301,
+                "status_text": "Moved Permanently",
+                "location": "https://cdn-loop.ddemo-site.com/",
+                "server": "cloudflare",
+                "headers": {
+                  "CF-Ray": "8c1d2e3f4a5b6c7d-FRA",
+                  "Server": "cloudflare"
+                },
+                "timing": {
+                  "dns_ms": 0,
+                  "connect_ms": 2.512,
+                  "tls_ms": 6.006,
+                  "ttfb_ms": 11.19,
+                  "total_ms": 11.19
+                },
+                "tls": {
+                  "version": "TLS 1.3",
+                  "cipher": "TLS_AES_128_GCM_SHA256",
+                  "subject": "*.ddemo-site.com",
+                  "issuer": "Domain Doctor Demo CA",
+                  "not_before": "2026-10-15T00:16:29Z",
+                  "not_after": "2027-01-13T01:16:29Z",
+                  "days_left": 89,
+                  "sans": [
+                    "*.ddemo-site.com",
+                    "ddemo-site.com"
+                  ],
+                  "hostname_match": true,
+                  "chain_valid": true,
+                  "chain_length": 2
+                },
+                "cdn": "Cloudflare"
+              }
+            ],
+            "loop": true
+          }
+        ],
+        "nodes": [
+          {
+            "node": "Frankfurt",
+            "location": "DE (demo)",
+            "url": "https://cdn-loop.ddemo-site.com/",
+            "final_url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "error_kind": "redirect_loop",
+            "hops": 1,
+            "total_ms": 18.423,
+            "ok": false
+          },
+          {
+            "node": "Frankfurt",
+            "location": "DE (demo)",
+            "url": "http://cdn-loop.ddemo-site.com/",
+            "final_url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "error_kind": "redirect_loop",
+            "hops": 2,
+            "total_ms": 23.369999999999997,
+            "ok": false
+          },
+          {
+            "node": "Tehran",
+            "location": "IR (demo)",
+            "url": "https://cdn-loop.ddemo-site.com/",
+            "final_url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "error_kind": "redirect_loop",
+            "hops": 1,
+            "total_ms": 18.418,
+            "ok": false
+          },
+          {
+            "node": "Tehran",
+            "location": "IR (demo)",
+            "url": "http://cdn-loop.ddemo-site.com/",
+            "final_url": "https://cdn-loop.ddemo-site.com/",
+            "status": 301,
+            "error_kind": "redirect_loop",
+            "hops": 2,
+            "total_ms": 27.453,
+            "ok": false
+          }
+        ],
+        "tls": {
+          "cdn-loop.ddemo-site.com": {
+            "version": "TLS 1.3",
+            "cipher": "TLS_AES_128_GCM_SHA256",
+            "subject": "*.ddemo-site.com",
+            "issuer": "Domain Doctor Demo CA",
+            "not_before": "2026-10-15T00:16:29Z",
+            "not_after": "2027-01-13T01:16:29Z",
+            "days_left": 89,
+            "sans": [
+              "*.ddemo-site.com",
+              "ddemo-site.com"
+            ],
+            "hostname_match": true,
+            "chain_valid": true,
+            "chain_length": 2
+          }
+        }
+      },
+      "started_at": "2026-10-15T01:28:07.2241117Z",
+      "duration_ms": 55
+    }
+  ],
+  "diagnosis": {
+    "healthy": false,
+    "headline": "Redirect loop caused by Cloudflare Flexible SSL",
+    "root_cause": {
+      "code": "load.cf.flexible-loop",
+      "layer": "web",
+      "title": "Redirect loop caused by Cloudflare Flexible SSL",
+      "explanation": "The site redirects forever: Cloudflare connects to the origin over HTTP while the origin forces HTTPS (Flexible SSL loop)",
+      "evidence": "GET https://cdn-loop.ddemo-site.com/ → redirect loop after 1 hops; CDN/WAF detected: Cloudflare"
+    },
+    "other_causes": [],
+    "symptoms": [],
+    "fixes": [
+      {
+        "priority": 1,
+        "title": "Redirect loop caused by Cloudflare Flexible SSL",
+        "action": "Install a certificate on the origin and set Cloudflare → SSL/TLS to Full (strict). (see the Website load section for all steps and server-specific snippets)",
+        "code": "load.cf.flexible-loop",
+        "layer": "web"
+      }
+    ]
+  }
+}

@@ -1,6 +1,7 @@
 package diagnose
 
 import (
+	"strings"
 	"testing"
 
 	"domaindoctor/internal/checks"
@@ -34,7 +35,7 @@ func TestExpiredExplainsEverything(t *testing.T) {
 		res(checks.LayerNameservers, checks.FAIL, f("ns.lame", checks.Critical), f("ns.none_usable", checks.Critical)),
 		res(checks.LayerZone, checks.FAIL, f("dns.no_address", checks.Critical), f("mail.dmarc_missing", checks.Warning)),
 		skipped,
-		res(checks.LayerWeb, checks.FAIL, f("web.timeout", checks.Critical), f("web.partial", checks.Warning)),
+		res(checks.LayerWeb, checks.FAIL, f("load.conn.timeout", checks.Critical), f("load.site.regional", checks.Warning)),
 	})
 	if d.RootCause == nil || d.RootCause.Code != "reg.expired" {
 		t.Fatalf("root %+v", d.RootCause)
@@ -42,7 +43,7 @@ func TestExpiredExplainsEverything(t *testing.T) {
 	if len(d.Causes) != 0 {
 		t.Fatalf("other causes should be empty: %+v", d.Causes)
 	}
-	want := map[string]string{"ns.lame": "ns.none_usable", "ns.none_usable": "reg.expired", "dns.no_address": "reg.expired", "web.timeout": "reg.expired", "skipped": "reg.expired"}
+	want := map[string]string{"ns.lame": "ns.none_usable", "ns.none_usable": "reg.expired", "dns.no_address": "reg.expired", "load.conn.timeout": "reg.expired", "skipped": "reg.expired"}
 	got := map[string]string{}
 	for _, s := range d.Symptoms {
 		got[s.Code] = s.ExplainedBy
@@ -56,7 +57,7 @@ func TestExpiredExplainsEverything(t *testing.T) {
 		t.Fatalf("first fix %+v", d.Fixes[0])
 	}
 	for _, fx := range d.Fixes {
-		if fx.Code == "web.partial" || fx.Code == "web.timeout" {
+		if fx.Code == "load.site.regional" || fx.Code == "load.conn.timeout" {
 			t.Errorf("symptom %s should not get its own fix", fx.Code)
 		}
 	}
@@ -101,13 +102,17 @@ func TestIndependentCauses(t *testing.T) {
 }
 
 func TestPrecedenceWithinWeb(t *testing.T) {
-	// Findings arrive with the 502 first; the expired certificate is still
-	// the root cause because a browser fails on it before seeing the 502.
+	// Website-load findings arrive in the knowledge base's ranked order
+	// (expired certificate before the 502); diagnosis keeps that order and
+	// takes title/fix text from the knowledge base.
 	d := Diagnose([]*checks.Result{
-		res(checks.LayerWeb, checks.FAIL, f("web.5xx", checks.Critical), f("tls.expired", checks.Critical)),
+		res(checks.LayerWeb, checks.FAIL, f("load.tls.expired", checks.Critical), f("load.http.502.origin", checks.Critical)),
 	})
-	if d.RootCause.Code != "tls.expired" || d.Causes[0].Code != "web.5xx" || d.Fixes[0].Code != "tls.expired" {
+	if d.RootCause.Code != "load.tls.expired" || d.Causes[0].Code != "load.http.502.origin" || d.Fixes[0].Code != "load.tls.expired" {
 		t.Fatalf("%+v", d)
+	}
+	if d.RootCause.Title != "Expired TLS certificate" || !strings.Contains(d.Fixes[0].Action, "Renew the certificate") {
+		t.Fatalf("KB text not used: %+v / %+v", d.RootCause, d.Fixes[0])
 	}
 }
 

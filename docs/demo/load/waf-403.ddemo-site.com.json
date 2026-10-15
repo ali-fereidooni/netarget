@@ -1,0 +1,1080 @@
+{
+  "request_id": "cc2b0bed042eec4be710fb10cf41f7eb6d02efbc",
+  "domain": {
+    "input": "waf-403.ddemo-site.com",
+    "name": "waf-403.ddemo-site.com",
+    "unicode": "waf-403.ddemo-site.com",
+    "apex": "ddemo-site.com"
+  },
+  "status": "done",
+  "started_at": "2026-10-15T01:28:06.821255Z",
+  "finished_at": "2026-10-15T01:28:06.9199714Z",
+  "nodes": [
+    {
+      "id": "fra1",
+      "name": "Frankfurt",
+      "location": "DE (demo)"
+    },
+    {
+      "id": "thr1",
+      "name": "Tehran",
+      "location": "IR (demo)"
+    }
+  ],
+  "layers": [
+    {
+      "layer": "registration",
+      "title": "Domain registration",
+      "status": "OK",
+      "summary": "Registered with Demo Registrar Ltd., 199 days left",
+      "findings": [
+        {
+          "code": "reg.ok",
+          "severity": "info",
+          "message": "Registered until 2027-05-03 (199 days left)."
+        }
+      ],
+      "details": {
+        "domain": "ddemo-site.com",
+        "registered": true,
+        "info": {
+          "source": "rdap",
+          "server": "127.0.0.1:64244",
+          "registrar": "Demo Registrar Ltd.",
+          "created": "2025-09-10T01:28:06Z",
+          "expires": "2027-05-03T01:28:06Z",
+          "status": [
+            "clientTransferProhibited"
+          ]
+        },
+        "days_left": 199
+      },
+      "started_at": "2026-10-15T01:28:06.8217835Z",
+      "duration_ms": 0
+    },
+    {
+      "layer": "nameservers",
+      "title": "Name servers",
+      "status": "OK",
+      "summary": "2 name server(s) delegated by com, 2 of 2 addresses answer authoritatively",
+      "findings": [],
+      "details": {
+        "delegation": {
+          "parent": "com.",
+          "parent_server": "2.0.0.1",
+          "ns": [
+            "ns1.ddemo-site.com.",
+            "ns2.ddemo-dns.net."
+          ],
+          "glue": {
+            "ns1.ddemo-site.com.": [
+              "3.0.0.1"
+            ]
+          },
+          "nxdomain": false,
+          "no_delegation": false,
+          "co_hosted": false
+        },
+        "servers": [
+          {
+            "name": "ns1.ddemo-site.com.",
+            "in_bailiwick": true,
+            "glue": [
+              "3.0.0.1"
+            ],
+            "addrs": [
+              "3.0.0.1"
+            ],
+            "probes": [
+              {
+                "ip": "3.0.0.1",
+                "status": "ok",
+                "rcode": "NOERROR",
+                "aa": true,
+                "serial": 1,
+                "ns": [
+                  "ns1.ddemo-site.com.",
+                  "ns2.ddemo-dns.net."
+                ]
+              }
+            ]
+          },
+          {
+            "name": "ns2.ddemo-dns.net.",
+            "in_bailiwick": false,
+            "addrs": [
+              "3.0.1.1"
+            ],
+            "probes": [
+              {
+                "ip": "3.0.1.1",
+                "status": "ok",
+                "rcode": "NOERROR",
+                "aa": true,
+                "serial": 1,
+                "ns": [
+                  "ns1.ddemo-site.com.",
+                  "ns2.ddemo-dns.net."
+                ]
+              }
+            ]
+          }
+        ],
+        "child_ns": [
+          "ns1.ddemo-site.com.",
+          "ns2.ddemo-dns.net."
+        ]
+      },
+      "started_at": "2026-10-15T01:28:06.8217835Z",
+      "duration_ms": 5
+    },
+    {
+      "layer": "zone",
+      "title": "DNS zone",
+      "status": "OK",
+      "summary": "5 records from ns1.ddemo-site.com. (3.0.0.1)",
+      "findings": [
+        {
+          "code": "dns.no_www",
+          "severity": "info",
+          "message": "www has no address record; visitors typing www. will get an error."
+        },
+        {
+          "code": "dns.no_ipv6",
+          "severity": "info",
+          "message": "No AAAA (IPv6) record."
+        },
+        {
+          "code": "dns.no_mx",
+          "severity": "info",
+          "message": "No MX record: the domain cannot receive email (fine if intended)."
+        },
+        {
+          "code": "dnssec.unsigned",
+          "severity": "info",
+          "message": "DNSSEC is not enabled for this domain.",
+          "evidence": "no DS at parent"
+        }
+      ],
+      "details": {
+        "queried_server": "ns1.ddemo-site.com. (3.0.0.1)",
+        "records": [
+          {
+            "name": "ddemo-site.com",
+            "type": "NS",
+            "ttl": 3600,
+            "value": "ns1.ddemo-site.com."
+          },
+          {
+            "name": "ddemo-site.com",
+            "type": "NS",
+            "ttl": 3600,
+            "value": "ns2.ddemo-dns.net."
+          },
+          {
+            "name": "ddemo-site.com",
+            "type": "SOA",
+            "ttl": 3600,
+            "value": "ns1.ddemo-site.com. hostmaster.ddemo-site.com. 1 7200 3600 1209600 300"
+          },
+          {
+            "name": "ddemo-site.com",
+            "type": "TXT",
+            "ttl": 3600,
+            "value": "\"v=spf1 -all\""
+          },
+          {
+            "name": "waf-403.ddemo-site.com",
+            "type": "A",
+            "ttl": 300,
+            "value": "127.0.0.1"
+          }
+        ],
+        "email": {
+          "spf": {
+            "record": "v=spf1 -all",
+            "records": 1,
+            "lookups": 0,
+            "all": "-"
+          },
+          "dmarc": {
+            "record": "v=DMARC1; p=reject",
+            "policy": "reject"
+          },
+          "dkim_selectors_found": []
+        },
+        "dnssec": {
+          "signed": false,
+          "chain": [
+            "no DS at parent: zone is insecure (unsigned delegation)"
+          ],
+          "valid": false
+        },
+        "propagation": [
+          {
+            "type": "A",
+            "name": "ddemo-site.com",
+            "authoritative": null,
+            "values": [
+              {
+                "value": "(empty)",
+                "count": 1,
+                "resolvers": [
+                  "Resolver (mock)"
+                ]
+              }
+            ],
+            "consistent": true
+          },
+          {
+            "type": "AAAA",
+            "name": "ddemo-site.com",
+            "authoritative": null,
+            "values": [
+              {
+                "value": "(empty)",
+                "count": 1,
+                "resolvers": [
+                  "Resolver (mock)"
+                ]
+              }
+            ],
+            "consistent": true
+          },
+          {
+            "type": "MX",
+            "name": "ddemo-site.com",
+            "authoritative": null,
+            "values": [
+              {
+                "value": "(empty)",
+                "count": 1,
+                "resolvers": [
+                  "Resolver (mock)"
+                ]
+              }
+            ],
+            "consistent": true
+          },
+          {
+            "type": "NS",
+            "name": "ddemo-site.com",
+            "authoritative": [
+              "ns1.ddemo-site.com.",
+              "ns2.ddemo-dns.net."
+            ],
+            "values": [
+              {
+                "value": "ns1.ddemo-site.com.",
+                "count": 1,
+                "resolvers": [
+                  "Resolver (mock)"
+                ]
+              },
+              {
+                "value": "ns2.ddemo-dns.net.",
+                "count": 1,
+                "resolvers": [
+                  "Resolver (mock)"
+                ]
+              }
+            ],
+            "consistent": true
+          }
+        ]
+      },
+      "started_at": "2026-10-15T01:28:06.827036Z",
+      "duration_ms": 11
+    },
+    {
+      "layer": "reachability",
+      "title": "Reachability",
+      "status": "OK",
+      "summary": "Reachable from 2 of 2 node(s)",
+      "findings": [],
+      "details": {
+        "targets": [
+          "127.0.0.1"
+        ],
+        "rows": [
+          {
+            "node_id": "fra1",
+            "node": "Frankfurt",
+            "location": "DE (demo)",
+            "ip": "127.0.0.1",
+            "family": "IPv4",
+            "sent": 4,
+            "received": 4,
+            "loss": 0,
+            "rtt_min": 0.1,
+            "rtt_avg": 0.2,
+            "rtt_max": 0.3,
+            "tcp_80": "open",
+            "tcp_443": "open",
+            "status": "ok"
+          },
+          {
+            "node_id": "thr1",
+            "node": "Tehran",
+            "location": "IR (demo)",
+            "ip": "127.0.0.1",
+            "family": "IPv4",
+            "sent": 4,
+            "received": 4,
+            "loss": 0,
+            "rtt_min": 0.1,
+            "rtt_avg": 0.2,
+            "rtt_max": 0.3,
+            "tcp_80": "open",
+            "tcp_443": "open",
+            "status": "ok"
+          }
+        ]
+      },
+      "started_at": "2026-10-15T01:28:06.8387666Z",
+      "duration_ms": 2
+    },
+    {
+      "layer": "web",
+      "title": "Website load",
+      "status": "WARN",
+      "summary": "https://waf-403.ddemo-site.com/ → 200 in 39 ms — Your server answers browsers but blocks other clients (curl or search-engine bots), so it is a security rule, not a broken site",
+      "findings": [
+        {
+          "code": "load.http.ua-block-origin",
+          "severity": "warn",
+          "message": "Your server answers browsers but blocks other clients (curl or search-engine bots), so it is a security rule, not a broken site",
+          "evidence": "GET https://waf-403.ddemo-site.com/ → 200 but GET https://waf-403.ddemo-site.com/ curl UA → 403; no CDN or WAF detected in front of the site"
+        },
+        {
+          "code": "load.site.googlebot-blocked",
+          "severity": "warn",
+          "message": "Requests with a Googlebot-like User-Agent are blocked while browsers work; real crawlers may be blocked too",
+          "evidence": "GET https://waf-403.ddemo-site.com/ googlebot UA → 403"
+        },
+        {
+          "code": "load.content.security-headers",
+          "severity": "info",
+          "message": "Some recommended security headers are missing (see evidence)",
+          "evidence": "missing: content-security-policy, x-content-type-options, referrer-policy"
+        }
+      ],
+      "details": {
+        "primary_node": "Frankfurt",
+        "canonical": "GET https://waf-403.ddemo-site.com/ (browser)",
+        "verdict": {
+          "text": "Your server answers browsers but blocks other clients (curl or search-engine bots), so it is a security rule, not a broken site",
+          "layer": "application",
+          "confidence": 0.7,
+          "level": "medium",
+          "rule_id": "http.ua-block-origin",
+          "evidence": [
+            "GET https://waf-403.ddemo-site.com/ → 200 but GET https://waf-403.ddemo-site.com/ curl UA → 403",
+            "no CDN or WAF detected in front of the site"
+          ],
+          "causes": [
+            {
+              "text": "A WAF or security plugin (ModSecurity, Imunify360, Wordfence, fail2ban) blocks non-browser User-Agents.",
+              "likelihood": "high"
+            },
+            {
+              "text": "A rewrite/deny rule matches the User-Agent string.",
+              "likelihood": "medium"
+            }
+          ],
+          "fixes": [
+            {
+              "step": "Find the block in the WAF/security plugin log and allow legitimate clients (search engines, monitoring).",
+              "snippets": {
+                "apache": "grep -i 'ModSecurity' /var/log/apache2/error.log | tail\ngrep -i 'HTTP_USER_AGENT' .htaccess",
+                "nginx": "grep -n 'http_user_agent' /etc/nginx/sites-enabled/*",
+                "wordpress": "Wordfence → Tools → Live Traffic: check blocked requests"
+              },
+              "verify": "The Googlebot-like request returns the same status as the browser request."
+            }
+          ],
+          "cannot_determine": [
+            "Whether real search-engine crawlers (verified by reverse DNS) are blocked too."
+          ],
+          "warnings": [
+            "Blocking scrapers can be intended; only relax rules for clients you want."
+          ]
+        },
+        "matches": [
+          {
+            "rule_id": "http.ua-block-origin",
+            "title": "The origin blocks some User-Agents",
+            "layer": "application",
+            "severity": "warn",
+            "confidence": 0.7,
+            "level": "medium",
+            "verdict": "Your server answers browsers but blocks other clients (curl or search-engine bots), so it is a security rule, not a broken site",
+            "evidence": [
+              "GET https://waf-403.ddemo-site.com/ → 200 but GET https://waf-403.ddemo-site.com/ curl UA → 403",
+              "no CDN or WAF detected in front of the site"
+            ],
+            "causes": [
+              {
+                "text": "A WAF or security plugin (ModSecurity, Imunify360, Wordfence, fail2ban) blocks non-browser User-Agents.",
+                "likelihood": "high"
+              },
+              {
+                "text": "A rewrite/deny rule matches the User-Agent string.",
+                "likelihood": "medium"
+              }
+            ],
+            "fixes": [
+              {
+                "step": "Find the block in the WAF/security plugin log and allow legitimate clients (search engines, monitoring).",
+                "snippets": {
+                  "apache": "grep -i 'ModSecurity' /var/log/apache2/error.log | tail\ngrep -i 'HTTP_USER_AGENT' .htaccess",
+                  "nginx": "grep -n 'http_user_agent' /etc/nginx/sites-enabled/*",
+                  "wordpress": "Wordfence → Tools → Live Traffic: check blocked requests"
+                },
+                "verify": "The Googlebot-like request returns the same status as the browser request."
+              }
+            ],
+            "cannot_determine": [
+              "Whether real search-engine crawlers (verified by reverse DNS) are blocked too."
+            ],
+            "warnings": [
+              "Blocking scrapers can be intended; only relax rules for clients you want."
+            ],
+            "group": "ua-block"
+          },
+          {
+            "rule_id": "site.googlebot-blocked",
+            "title": "Search-engine crawler blocked",
+            "layer": "application",
+            "severity": "warn",
+            "confidence": 0.65,
+            "level": "medium",
+            "verdict": "Requests with a Googlebot-like User-Agent are blocked while browsers work; real crawlers may be blocked too",
+            "evidence": [
+              "GET https://waf-403.ddemo-site.com/ googlebot UA → 403"
+            ],
+            "causes": [
+              {
+                "text": "A bot-protection rule blocks crawler User-Agents (and may not verify real Googlebot by reverse DNS).",
+                "likelihood": "high"
+              }
+            ],
+            "fixes": [
+              {
+                "step": "Allow verified search-engine crawlers in your WAF/bot settings; check crawl errors in Google Search Console.",
+                "verify": "Search Console URL Inspection fetches the page successfully."
+              }
+            ],
+            "cannot_determine": [
+              "Whether the real Googlebot (verified by IP) is blocked; our request only imitates its User-Agent."
+            ]
+          },
+          {
+            "rule_id": "content.security-headers",
+            "title": "Recommended security headers missing",
+            "layer": "content",
+            "severity": "info",
+            "confidence": 0.8,
+            "level": "high",
+            "verdict": "Some recommended security headers are missing (see evidence)",
+            "evidence": [
+              "missing: content-security-policy, x-content-type-options, referrer-policy"
+            ],
+            "causes": [
+              {
+                "text": "The headers were never configured.",
+                "likelihood": "high"
+              }
+            ],
+            "fixes": [
+              {
+                "step": "Add the missing headers; start the Content-Security-Policy in report-only mode.",
+                "snippets": {
+                  "apache": "Header always set X-Content-Type-Options \"nosniff\"\nHeader always set Referrer-Policy \"strict-origin-when-cross-origin\"\nHeader always set Content-Security-Policy-Report-Only \"default-src 'self'\"",
+                  "nginx": "add_header X-Content-Type-Options \"nosniff\" always;\nadd_header Referrer-Policy \"strict-origin-when-cross-origin\" always;\nadd_header Content-Security-Policy-Report-Only \"default-src 'self'\" always;"
+                },
+                "verify": "curl -sI https://waf-403.ddemo-site.com/ shows the headers."
+              }
+            ],
+            "cannot_determine": [
+              "Whether a strict CSP would break your scripts (report-only mode shows this first)."
+            ]
+          }
+        ],
+        "fingerprints": {
+          "cdn": [],
+          "server": [
+            {
+              "id": "nginx",
+              "kind": "server",
+              "name": "nginx",
+              "confidence": 0.91,
+              "level": "high",
+              "evidence": [
+                "header server: nginx/1.27.5 (GET http://waf-403.ddemo-site.com/)",
+                "page content \"\u003ccenter\u003enginx/1.27.5\u003c/center\u003e\" (GET https://waf-403.ddemo-site.com/)"
+              ]
+            }
+          ],
+          "platform": [],
+          "no_cdn": true
+        },
+        "signals": [
+          {
+            "name": "googlebot_blocked",
+            "evidence": "GET https://waf-403.ddemo-site.com/ googlebot UA → 403"
+          },
+          {
+            "name": "https_ok",
+            "evidence": "GET https://waf-403.ddemo-site.com/ → 200"
+          },
+          {
+            "name": "no_cdn",
+            "evidence": "no CDN or WAF detected with at least medium confidence"
+          },
+          {
+            "name": "security_headers_missing",
+            "evidence": "missing: content-security-policy, x-content-type-options, referrer-policy"
+          },
+          {
+            "name": "ua_dependent_block",
+            "evidence": "GET https://waf-403.ddemo-site.com/ → 200 but GET https://waf-403.ddemo-site.com/ curl UA → 403"
+          }
+        ],
+        "matrix": [
+          {
+            "node": "Frankfurt",
+            "spec": "base:https:waf-403.ddemo-site.com",
+            "label": "GET https://waf-403.ddemo-site.com/",
+            "url": "https://waf-403.ddemo-site.com/",
+            "final_url": "https://waf-403.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 73,
+            "ttfb_ms": 38.06,
+            "total_ms": 38.594,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "base:http:waf-403.ddemo-site.com",
+            "label": "GET http://waf-403.ddemo-site.com/",
+            "url": "http://waf-403.ddemo-site.com/",
+            "final_url": "https://waf-403.ddemo-site.com/",
+            "status": 200,
+            "hops": 2,
+            "proto": "HTTP/2.0",
+            "body_size": 73,
+            "ttfb_ms": 16.995,
+            "total_ms": 16.995,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "head",
+            "label": "HEAD https://waf-403.ddemo-site.com/",
+            "url": "https://waf-403.ddemo-site.com/",
+            "final_url": "https://waf-403.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 0,
+            "ttfb_ms": 36.965,
+            "total_ms": 36.965,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "ua:curl",
+            "label": "GET https://waf-403.ddemo-site.com/ curl UA",
+            "url": "https://waf-403.ddemo-site.com/",
+            "final_url": "https://waf-403.ddemo-site.com/",
+            "status": 403,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 153,
+            "ttfb_ms": 24.162,
+            "total_ms": 24.162,
+            "server": "nginx/1.27.5",
+            "diff": true
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "ua:googlebot",
+            "label": "GET https://waf-403.ddemo-site.com/ googlebot UA",
+            "url": "https://waf-403.ddemo-site.com/",
+            "final_url": "https://waf-403.ddemo-site.com/",
+            "status": 403,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 153,
+            "ttfb_ms": 31.003,
+            "total_ms": 31.003,
+            "server": "nginx/1.27.5",
+            "diff": true
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "proto:h1",
+            "label": "GET https://waf-403.ddemo-site.com/ HTTP/1.1",
+            "url": "https://waf-403.ddemo-site.com/",
+            "final_url": "https://waf-403.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/1.1",
+            "body_size": 73,
+            "ttfb_ms": 22.611,
+            "total_ms": 22.611,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "proto:h2",
+            "label": "GET https://waf-403.ddemo-site.com/ HTTP/2",
+            "url": "https://waf-403.ddemo-site.com/",
+            "final_url": "https://waf-403.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 73,
+            "ttfb_ms": 31.003,
+            "total_ms": 31.003,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "enc:gzip",
+            "label": "GET https://waf-403.ddemo-site.com/ gzip",
+            "url": "https://waf-403.ddemo-site.com/",
+            "final_url": "https://waf-403.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 73,
+            "ttfb_ms": 22.611,
+            "total_ms": 23.144,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "enc:identity",
+            "label": "GET https://waf-403.ddemo-site.com/ no compression",
+            "url": "https://waf-403.ddemo-site.com/",
+            "final_url": "https://waf-403.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 73,
+            "ttfb_ms": 33.166,
+            "total_ms": 33.738,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Tehran",
+            "spec": "base:https:waf-403.ddemo-site.com",
+            "label": "GET https://waf-403.ddemo-site.com/",
+            "url": "https://waf-403.ddemo-site.com/",
+            "final_url": "https://waf-403.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 73,
+            "ttfb_ms": 32.642,
+            "total_ms": 32.642,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Tehran",
+            "spec": "base:http:waf-403.ddemo-site.com",
+            "label": "GET http://waf-403.ddemo-site.com/",
+            "url": "http://waf-403.ddemo-site.com/",
+            "final_url": "https://waf-403.ddemo-site.com/",
+            "status": 200,
+            "hops": 2,
+            "proto": "HTTP/2.0",
+            "body_size": 73,
+            "ttfb_ms": 29.085,
+            "total_ms": 29.085,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Tehran",
+            "spec": "head",
+            "label": "HEAD https://waf-403.ddemo-site.com/",
+            "url": "https://waf-403.ddemo-site.com/",
+            "final_url": "https://waf-403.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 0,
+            "ttfb_ms": 25.482,
+            "total_ms": 26.09,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Tehran",
+            "spec": "ua:curl",
+            "label": "GET https://waf-403.ddemo-site.com/ curl UA",
+            "url": "https://waf-403.ddemo-site.com/",
+            "final_url": "https://waf-403.ddemo-site.com/",
+            "status": 403,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 153,
+            "ttfb_ms": 23.555,
+            "total_ms": 23.555,
+            "server": "nginx/1.27.5",
+            "diff": true
+          },
+          {
+            "node": "Tehran",
+            "spec": "ua:googlebot",
+            "label": "GET https://waf-403.ddemo-site.com/ googlebot UA",
+            "url": "https://waf-403.ddemo-site.com/",
+            "final_url": "https://waf-403.ddemo-site.com/",
+            "status": 403,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 153,
+            "ttfb_ms": 38.603,
+            "total_ms": 38.603,
+            "server": "nginx/1.27.5",
+            "diff": true
+          },
+          {
+            "node": "Tehran",
+            "spec": "proto:h1",
+            "label": "GET https://waf-403.ddemo-site.com/ HTTP/1.1",
+            "url": "https://waf-403.ddemo-site.com/",
+            "final_url": "https://waf-403.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/1.1",
+            "body_size": 73,
+            "ttfb_ms": 40.218,
+            "total_ms": 40.737,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Tehran",
+            "spec": "proto:h2",
+            "label": "GET https://waf-403.ddemo-site.com/ HTTP/2",
+            "url": "https://waf-403.ddemo-site.com/",
+            "final_url": "https://waf-403.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 73,
+            "ttfb_ms": 30.069,
+            "total_ms": 30.069,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Tehran",
+            "spec": "enc:gzip",
+            "label": "GET https://waf-403.ddemo-site.com/ gzip",
+            "url": "https://waf-403.ddemo-site.com/",
+            "final_url": "https://waf-403.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 73,
+            "ttfb_ms": 31.179,
+            "total_ms": 31.179,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Tehran",
+            "spec": "enc:identity",
+            "label": "GET https://waf-403.ddemo-site.com/ no compression",
+            "url": "https://waf-403.ddemo-site.com/",
+            "final_url": "https://waf-403.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 73,
+            "ttfb_ms": 35.406,
+            "total_ms": 35.406,
+            "server": "nginx/1.27.5"
+          }
+        ],
+        "resources": {
+          "page": {
+            "url": "https://waf-403.ddemo-site.com/",
+            "status": 200,
+            "size": 73,
+            "content_type": "text/html",
+            "ttfb_ms": 9.317,
+            "found": 0,
+            "checked": 0
+          },
+          "resources": []
+        },
+        "chains": [
+          {
+            "start": "https://waf-403.ddemo-site.com/",
+            "hops": [
+              {
+                "url": "https://waf-403.ddemo-site.com/",
+                "method": "GET",
+                "proto": "HTTP/2.0",
+                "all_headers": {
+                  "accept-ranges": [
+                    "bytes"
+                  ],
+                  "content-length": [
+                    "73"
+                  ],
+                  "content-type": [
+                    "text/html"
+                  ],
+                  "date": [
+                    "Thu, 15 Oct 2026 01:28:06 GMT"
+                  ],
+                  "etag": [
+                    "\"6ad0292e-49\""
+                  ],
+                  "last-modified": [
+                    "Thu, 15 Oct 2026 01:15:26 GMT"
+                  ],
+                  "server": [
+                    "nginx/1.27.5"
+                  ],
+                  "strict-transport-security": [
+                    "max-age=86400"
+                  ]
+                },
+                "body_size": 73,
+                "ip": "127.0.0.1",
+                "status": 200,
+                "status_text": "OK",
+                "server": "nginx/1.27.5",
+                "headers": {
+                  "Content-Type": "text/html",
+                  "Server": "nginx/1.27.5",
+                  "Strict-Transport-Security": "max-age=86400"
+                },
+                "timing": {
+                  "dns_ms": 0,
+                  "connect_ms": 0.514,
+                  "tls_ms": 11.876,
+                  "ttfb_ms": 38.06,
+                  "total_ms": 38.594
+                },
+                "tls": {
+                  "version": "TLS 1.3",
+                  "cipher": "TLS_AES_128_GCM_SHA256",
+                  "subject": "*.ddemo-site.com",
+                  "issuer": "Domain Doctor Demo CA",
+                  "not_before": "2026-10-15T00:16:29Z",
+                  "not_after": "2027-01-13T01:16:29Z",
+                  "days_left": 89,
+                  "sans": [
+                    "*.ddemo-site.com",
+                    "ddemo-site.com"
+                  ],
+                  "hostname_match": true,
+                  "chain_valid": true,
+                  "chain_length": 2
+                }
+              }
+            ]
+          },
+          {
+            "start": "http://waf-403.ddemo-site.com/",
+            "hops": [
+              {
+                "url": "http://waf-403.ddemo-site.com/",
+                "method": "GET",
+                "proto": "HTTP/1.1",
+                "all_headers": {
+                  "content-length": [
+                    "169"
+                  ],
+                  "content-type": [
+                    "text/html"
+                  ],
+                  "date": [
+                    "Thu, 15 Oct 2026 01:28:06 GMT"
+                  ],
+                  "location": [
+                    "https://waf-403.ddemo-site.com/"
+                  ],
+                  "server": [
+                    "nginx/1.27.5"
+                  ]
+                },
+                "body_size": 169,
+                "ip": "127.0.0.1",
+                "status": 301,
+                "status_text": "Moved Permanently",
+                "location": "https://waf-403.ddemo-site.com/",
+                "server": "nginx/1.27.5",
+                "headers": {
+                  "Content-Type": "text/html",
+                  "Server": "nginx/1.27.5"
+                },
+                "timing": {
+                  "dns_ms": 0,
+                  "connect_ms": 0.514,
+                  "tls_ms": 0,
+                  "ttfb_ms": 9.006,
+                  "total_ms": 9.518
+                }
+              },
+              {
+                "url": "https://waf-403.ddemo-site.com/",
+                "method": "GET",
+                "proto": "HTTP/2.0",
+                "all_headers": {
+                  "accept-ranges": [
+                    "bytes"
+                  ],
+                  "content-length": [
+                    "73"
+                  ],
+                  "content-type": [
+                    "text/html"
+                  ],
+                  "date": [
+                    "Thu, 15 Oct 2026 01:28:06 GMT"
+                  ],
+                  "etag": [
+                    "\"6ad0292e-49\""
+                  ],
+                  "last-modified": [
+                    "Thu, 15 Oct 2026 01:15:26 GMT"
+                  ],
+                  "server": [
+                    "nginx/1.27.5"
+                  ],
+                  "strict-transport-security": [
+                    "max-age=86400"
+                  ]
+                },
+                "body_size": 73,
+                "ip": "127.0.0.1",
+                "status": 200,
+                "status_text": "OK",
+                "server": "nginx/1.27.5",
+                "headers": {
+                  "Content-Type": "text/html",
+                  "Server": "nginx/1.27.5",
+                  "Strict-Transport-Security": "max-age=86400"
+                },
+                "timing": {
+                  "dns_ms": 0,
+                  "connect_ms": 1.778,
+                  "tls_ms": 7.408,
+                  "ttfb_ms": 16.995,
+                  "total_ms": 16.995
+                },
+                "tls": {
+                  "version": "TLS 1.3",
+                  "cipher": "TLS_AES_128_GCM_SHA256",
+                  "subject": "*.ddemo-site.com",
+                  "issuer": "Domain Doctor Demo CA",
+                  "not_before": "2026-10-15T00:16:29Z",
+                  "not_after": "2027-01-13T01:16:29Z",
+                  "days_left": 89,
+                  "sans": [
+                    "*.ddemo-site.com",
+                    "ddemo-site.com"
+                  ],
+                  "hostname_match": true,
+                  "chain_valid": true,
+                  "chain_length": 2
+                }
+              }
+            ]
+          }
+        ],
+        "nodes": [
+          {
+            "node": "Frankfurt",
+            "location": "DE (demo)",
+            "url": "https://waf-403.ddemo-site.com/",
+            "final_url": "https://waf-403.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "total_ms": 38.594,
+            "ok": true
+          },
+          {
+            "node": "Frankfurt",
+            "location": "DE (demo)",
+            "url": "http://waf-403.ddemo-site.com/",
+            "final_url": "https://waf-403.ddemo-site.com/",
+            "status": 200,
+            "hops": 2,
+            "total_ms": 26.513,
+            "ok": true
+          },
+          {
+            "node": "Tehran",
+            "location": "IR (demo)",
+            "url": "https://waf-403.ddemo-site.com/",
+            "final_url": "https://waf-403.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "total_ms": 32.642,
+            "ok": true
+          },
+          {
+            "node": "Tehran",
+            "location": "IR (demo)",
+            "url": "http://waf-403.ddemo-site.com/",
+            "final_url": "https://waf-403.ddemo-site.com/",
+            "status": 200,
+            "hops": 2,
+            "total_ms": 38.603,
+            "ok": true
+          }
+        ],
+        "tls": {
+          "waf-403.ddemo-site.com": {
+            "version": "TLS 1.3",
+            "cipher": "TLS_AES_128_GCM_SHA256",
+            "subject": "*.ddemo-site.com",
+            "issuer": "Domain Doctor Demo CA",
+            "not_before": "2026-10-15T00:16:29Z",
+            "not_after": "2027-01-13T01:16:29Z",
+            "days_left": 89,
+            "sans": [
+              "*.ddemo-site.com",
+              "ddemo-site.com"
+            ],
+            "hostname_match": true,
+            "chain_valid": true,
+            "chain_length": 2
+          }
+        }
+      },
+      "started_at": "2026-10-15T01:28:06.8409034Z",
+      "duration_ms": 79
+    }
+  ],
+  "diagnosis": {
+    "healthy": false,
+    "headline": "No blocking problem found, but there are warnings worth fixing.",
+    "other_causes": [],
+    "symptoms": [],
+    "fixes": [
+      {
+        "priority": 3,
+        "title": "The origin blocks some User-Agents",
+        "action": "Find the block in the WAF/security plugin log and allow legitimate clients (search engines, monitoring).",
+        "code": "load.http.ua-block-origin",
+        "layer": "web"
+      },
+      {
+        "priority": 3,
+        "title": "Search-engine crawler blocked",
+        "action": "Allow verified search-engine crawlers in your WAF/bot settings; check crawl errors in Google Search Console.",
+        "code": "load.site.googlebot-blocked",
+        "layer": "web"
+      }
+    ]
+  }
+}

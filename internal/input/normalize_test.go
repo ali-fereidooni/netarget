@@ -60,3 +60,14 @@ func TestNormalize(t *testing.T) {
 		}
 	}
 }
+
+func TestParseOriginIP(t *testing.T) {
+	for _, bad := range []string{"fe80::1%eth0", "2606:4700::1%25eth0", "2001:0:4136:e378::1", "10.0.0.1", "example.com"} {
+		if _, err := ParseOriginIP(bad); err == nil {
+			t.Errorf("accepted %q", bad)
+		}
+	}
+	if a, err := ParseOriginIP("93.184.215.14"); err != nil || a.String() != "93.184.215.14" {
+		t.Fatalf("%v %v", a, err)
+	}
+}

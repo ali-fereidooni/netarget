@@ -1,0 +1,1204 @@
+{
+  "request_id": "fb931d19274b80da0e770de5daba78524aba4d69",
+  "domain": {
+    "input": "mixed.ddemo-site.com",
+    "name": "mixed.ddemo-site.com",
+    "unicode": "mixed.ddemo-site.com",
+    "apex": "ddemo-site.com"
+  },
+  "status": "done",
+  "started_at": "2026-10-15T01:28:06.9220713Z",
+  "finished_at": "2026-10-15T01:28:07.0502255Z",
+  "nodes": [
+    {
+      "id": "fra1",
+      "name": "Frankfurt",
+      "location": "DE (demo)"
+    },
+    {
+      "id": "thr1",
+      "name": "Tehran",
+      "location": "IR (demo)"
+    }
+  ],
+  "layers": [
+    {
+      "layer": "registration",
+      "title": "Domain registration",
+      "status": "OK",
+      "summary": "Registered with Demo Registrar Ltd., 199 days left",
+      "findings": [
+        {
+          "code": "reg.ok",
+          "severity": "info",
+          "message": "Registered until 2027-05-03 (199 days left)."
+        }
+      ],
+      "details": {
+        "domain": "ddemo-site.com",
+        "registered": true,
+        "info": {
+          "source": "rdap",
+          "server": "127.0.0.1:64244",
+          "registrar": "Demo Registrar Ltd.",
+          "created": "2025-09-10T01:28:06Z",
+          "expires": "2027-05-03T01:28:06Z",
+          "status": [
+            "clientTransferProhibited"
+          ]
+        },
+        "days_left": 199
+      },
+      "started_at": "2026-10-15T01:28:06.9220713Z",
+      "duration_ms": 0
+    },
+    {
+      "layer": "nameservers",
+      "title": "Name servers",
+      "status": "OK",
+      "summary": "2 name server(s) delegated by com, 2 of 2 addresses answer authoritatively",
+      "findings": [],
+      "details": {
+        "delegation": {
+          "parent": "com.",
+          "parent_server": "2.0.0.1",
+          "ns": [
+            "ns1.ddemo-site.com.",
+            "ns2.ddemo-dns.net."
+          ],
+          "glue": {
+            "ns1.ddemo-site.com.": [
+              "3.0.0.1"
+            ]
+          },
+          "nxdomain": false,
+          "no_delegation": false,
+          "co_hosted": false
+        },
+        "servers": [
+          {
+            "name": "ns1.ddemo-site.com.",
+            "in_bailiwick": true,
+            "glue": [
+              "3.0.0.1"
+            ],
+            "addrs": [
+              "3.0.0.1"
+            ],
+            "probes": [
+              {
+                "ip": "3.0.0.1",
+                "status": "ok",
+                "rcode": "NOERROR",
+                "aa": true,
+                "serial": 1,
+                "ns": [
+                  "ns1.ddemo-site.com.",
+                  "ns2.ddemo-dns.net."
+                ]
+              }
+            ]
+          },
+          {
+            "name": "ns2.ddemo-dns.net.",
+            "in_bailiwick": false,
+            "addrs": [
+              "3.0.1.1"
+            ],
+            "probes": [
+              {
+                "ip": "3.0.1.1",
+                "status": "ok",
+                "rcode": "NOERROR",
+                "aa": true,
+                "serial": 1,
+                "ns": [
+                  "ns1.ddemo-site.com.",
+                  "ns2.ddemo-dns.net."
+                ]
+              }
+            ]
+          }
+        ],
+        "child_ns": [
+          "ns1.ddemo-site.com.",
+          "ns2.ddemo-dns.net."
+        ]
+      },
+      "started_at": "2026-10-15T01:28:06.9226035Z",
+      "duration_ms": 6
+    },
+    {
+      "layer": "zone",
+      "title": "DNS zone",
+      "status": "OK",
+      "summary": "5 records from ns1.ddemo-site.com. (3.0.0.1)",
+      "findings": [
+        {
+          "code": "dns.no_www",
+          "severity": "info",
+          "message": "www has no address record; visitors typing www. will get an error."
+        },
+        {
+          "code": "dns.no_ipv6",
+          "severity": "info",
+          "message": "No AAAA (IPv6) record."
+        },
+        {
+          "code": "dns.no_mx",
+          "severity": "info",
+          "message": "No MX record: the domain cannot receive email (fine if intended)."
+        },
+        {
+          "code": "dnssec.unsigned",
+          "severity": "info",
+          "message": "DNSSEC is not enabled for this domain.",
+          "evidence": "no DS at parent"
+        }
+      ],
+      "details": {
+        "queried_server": "ns1.ddemo-site.com. (3.0.0.1)",
+        "records": [
+          {
+            "name": "ddemo-site.com",
+            "type": "NS",
+            "ttl": 3600,
+            "value": "ns1.ddemo-site.com."
+          },
+          {
+            "name": "ddemo-site.com",
+            "type": "NS",
+            "ttl": 3600,
+            "value": "ns2.ddemo-dns.net."
+          },
+          {
+            "name": "ddemo-site.com",
+            "type": "SOA",
+            "ttl": 3600,
+            "value": "ns1.ddemo-site.com. hostmaster.ddemo-site.com. 1 7200 3600 1209600 300"
+          },
+          {
+            "name": "ddemo-site.com",
+            "type": "TXT",
+            "ttl": 3600,
+            "value": "\"v=spf1 -all\""
+          },
+          {
+            "name": "mixed.ddemo-site.com",
+            "type": "A",
+            "ttl": 300,
+            "value": "127.0.0.1"
+          }
+        ],
+        "email": {
+          "spf": {
+            "record": "v=spf1 -all",
+            "records": 1,
+            "lookups": 0,
+            "all": "-"
+          },
+          "dmarc": {
+            "record": "v=DMARC1; p=reject",
+            "policy": "reject"
+          },
+          "dkim_selectors_found": []
+        },
+        "dnssec": {
+          "signed": false,
+          "chain": [
+            "no DS at parent: zone is insecure (unsigned delegation)"
+          ],
+          "valid": false
+        },
+        "propagation": [
+          {
+            "type": "A",
+            "name": "ddemo-site.com",
+            "authoritative": null,
+            "values": [
+              {
+                "value": "(empty)",
+                "count": 1,
+                "resolvers": [
+                  "Resolver (mock)"
+                ]
+              }
+            ],
+            "consistent": true
+          },
+          {
+            "type": "AAAA",
+            "name": "ddemo-site.com",
+            "authoritative": null,
+            "values": [
+              {
+                "value": "(empty)",
+                "count": 1,
+                "resolvers": [
+                  "Resolver (mock)"
+                ]
+              }
+            ],
+            "consistent": true
+          },
+          {
+            "type": "MX",
+            "name": "ddemo-site.com",
+            "authoritative": null,
+            "values": [
+              {
+                "value": "(empty)",
+                "count": 1,
+                "resolvers": [
+                  "Resolver (mock)"
+                ]
+              }
+            ],
+            "consistent": true
+          },
+          {
+            "type": "NS",
+            "name": "ddemo-site.com",
+            "authoritative": [
+              "ns1.ddemo-site.com.",
+              "ns2.ddemo-dns.net."
+            ],
+            "values": [
+              {
+                "value": "ns1.ddemo-site.com.",
+                "count": 1,
+                "resolvers": [
+                  "Resolver (mock)"
+                ]
+              },
+              {
+                "value": "ns2.ddemo-dns.net.",
+                "count": 1,
+                "resolvers": [
+                  "Resolver (mock)"
+                ]
+              }
+            ],
+            "consistent": true
+          }
+        ]
+      },
+      "started_at": "2026-10-15T01:28:06.9287536Z",
+      "duration_ms": 11
+    },
+    {
+      "layer": "reachability",
+      "title": "Reachability",
+      "status": "OK",
+      "summary": "Reachable from 2 of 2 node(s)",
+      "findings": [],
+      "details": {
+        "targets": [
+          "127.0.0.1"
+        ],
+        "rows": [
+          {
+            "node_id": "fra1",
+            "node": "Frankfurt",
+            "location": "DE (demo)",
+            "ip": "127.0.0.1",
+            "family": "IPv4",
+            "sent": 4,
+            "received": 4,
+            "loss": 0,
+            "rtt_min": 0.1,
+            "rtt_avg": 0.2,
+            "rtt_max": 0.3,
+            "tcp_80": "open",
+            "tcp_443": "open",
+            "status": "ok"
+          },
+          {
+            "node_id": "thr1",
+            "node": "Tehran",
+            "location": "IR (demo)",
+            "ip": "127.0.0.1",
+            "family": "IPv4",
+            "sent": 4,
+            "received": 4,
+            "loss": 0,
+            "rtt_min": 0.1,
+            "rtt_avg": 0.2,
+            "rtt_max": 0.3,
+            "tcp_80": "open",
+            "tcp_443": "open",
+            "status": "ok"
+          }
+        ]
+      },
+      "started_at": "2026-10-15T01:28:06.9399622Z",
+      "duration_ms": 1
+    },
+    {
+      "layer": "web",
+      "title": "Website load",
+      "status": "WARN",
+      "summary": "https://mixed.ddemo-site.com/ → 200 in 29 ms — The HTTPS page loads resources over plain HTTP; browsers block scripts/styles and mark the page as not secure",
+      "findings": [
+        {
+          "code": "load.content.mixed",
+          "severity": "warn",
+          "message": "The HTTPS page loads resources over plain HTTP; browsers block scripts/styles and mark the page as not secure",
+          "evidence": "1 HTTP resource(s) on the HTTPS page: http://mixed.ddemo-site.com/app.js"
+        },
+        {
+          "code": "load.content.res-failed",
+          "severity": "warn",
+          "message": "Some CSS, JavaScript, image or font files on the page fail to load (see the resource table for hosts and statuses)",
+          "evidence": "1 resource(s) failed to load: https://mixed.ddemo-site.com/missing.png"
+        },
+        {
+          "code": "load.content.hsts-missing",
+          "severity": "info",
+          "message": "HTTPS works but the site does not send Strict-Transport-Security, so browsers may still try plain HTTP first",
+          "evidence": "no Strict-Transport-Security header on https://mixed.ddemo-site.com/"
+        },
+        {
+          "code": "load.content.security-headers",
+          "severity": "info",
+          "message": "Some recommended security headers are missing (see evidence)",
+          "evidence": "missing: content-security-policy, x-content-type-options, referrer-policy"
+        },
+        {
+          "code": "load.content.weak-cache",
+          "severity": "info",
+          "message": "Static files have no or very short cache lifetimes, so repeat visits download them again",
+          "evidence": "2 static resource(s) without useful caching: https://mixed.ddemo-site.com/style.css, http://mixed.ddemo-site.com/app.js"
+        }
+      ],
+      "details": {
+        "primary_node": "Frankfurt",
+        "canonical": "GET https://mixed.ddemo-site.com/ (browser)",
+        "verdict": {
+          "text": "The HTTPS page loads resources over plain HTTP; browsers block scripts/styles and mark the page as not secure",
+          "layer": "content",
+          "confidence": 0.9,
+          "level": "high",
+          "rule_id": "content.mixed",
+          "evidence": [
+            "1 HTTP resource(s) on the HTTPS page: http://mixed.ddemo-site.com/app.js"
+          ],
+          "causes": [
+            {
+              "text": "Hard-coded http:// URLs in templates, content or the database (common after moving to HTTPS).",
+              "likelihood": "high"
+            }
+          ],
+          "fixes": [
+            {
+              "step": "Change the resource URLs to https:// (or protocol-relative/relative URLs).",
+              "snippets": {
+                "wordpress": "wp db export before-https.sql   # backup first\nwp search-replace 'http://mixed.ddemo-site.com' 'https://mixed.ddemo-site.com' --all-tables --dry-run\n# then without --dry-run"
+              },
+              "verify": "The resource table shows no mixed_content items; the browser console has no mixed-content warnings."
+            },
+            {
+              "step": "As a safety net, ask browsers to upgrade remaining requests.",
+              "snippets": {
+                "apache": "Header always set Content-Security-Policy \"upgrade-insecure-requests\"",
+                "nginx": "add_header Content-Security-Policy \"upgrade-insecure-requests\" always;"
+              },
+              "verify": "Remaining http:// resources load over https."
+            }
+          ],
+          "cannot_determine": [
+            "Resources added later by JavaScript (only the static HTML is analysed)."
+          ]
+        },
+        "matches": [
+          {
+            "rule_id": "content.mixed",
+            "title": "Mixed content (HTTP resources on an HTTPS page)",
+            "layer": "content",
+            "severity": "warn",
+            "confidence": 0.9,
+            "level": "high",
+            "verdict": "The HTTPS page loads resources over plain HTTP; browsers block scripts/styles and mark the page as not secure",
+            "evidence": [
+              "1 HTTP resource(s) on the HTTPS page: http://mixed.ddemo-site.com/app.js"
+            ],
+            "causes": [
+              {
+                "text": "Hard-coded http:// URLs in templates, content or the database (common after moving to HTTPS).",
+                "likelihood": "high"
+              }
+            ],
+            "fixes": [
+              {
+                "step": "Change the resource URLs to https:// (or protocol-relative/relative URLs).",
+                "snippets": {
+                  "wordpress": "wp db export before-https.sql   # backup first\nwp search-replace 'http://mixed.ddemo-site.com' 'https://mixed.ddemo-site.com' --all-tables --dry-run\n# then without --dry-run"
+                },
+                "verify": "The resource table shows no mixed_content items; the browser console has no mixed-content warnings."
+              },
+              {
+                "step": "As a safety net, ask browsers to upgrade remaining requests.",
+                "snippets": {
+                  "apache": "Header always set Content-Security-Policy \"upgrade-insecure-requests\"",
+                  "nginx": "add_header Content-Security-Policy \"upgrade-insecure-requests\" always;"
+                },
+                "verify": "Remaining http:// resources load over https."
+              }
+            ],
+            "cannot_determine": [
+              "Resources added later by JavaScript (only the static HTML is analysed)."
+            ]
+          },
+          {
+            "rule_id": "content.res-failed",
+            "title": "Page resources fail to load",
+            "layer": "content",
+            "severity": "warn",
+            "confidence": 0.85,
+            "level": "high",
+            "verdict": "Some CSS, JavaScript, image or font files on the page fail to load (see the resource table for hosts and statuses)",
+            "evidence": [
+              "1 resource(s) failed to load: https://mixed.ddemo-site.com/missing.png"
+            ],
+            "causes": [
+              {
+                "text": "Files missing after a deploy or wrong paths in templates (404).",
+                "likelihood": "high"
+              },
+              {
+                "text": "A third-party host (CDN, analytics, fonts) is down or blocked in some regions.",
+                "likelihood": "medium"
+              },
+              {
+                "text": "Hotlink protection or a WAF blocks asset requests.",
+                "likelihood": "low"
+              }
+            ],
+            "fixes": [
+              {
+                "step": "Fix or remove the failing URLs; for third-party files, self-host critical assets or add fallbacks.",
+                "verify": "The resource table shows no failed items."
+              }
+            ],
+            "cannot_determine": [
+              "Resources loaded dynamically by JavaScript."
+            ]
+          },
+          {
+            "rule_id": "content.hsts-missing",
+            "title": "HSTS not enabled",
+            "layer": "tls",
+            "severity": "info",
+            "confidence": 0.85,
+            "level": "high",
+            "verdict": "HTTPS works but the site does not send Strict-Transport-Security, so browsers may still try plain HTTP first",
+            "evidence": [
+              "no Strict-Transport-Security header on https://mixed.ddemo-site.com/"
+            ],
+            "causes": [
+              {
+                "text": "The header is not configured.",
+                "likelihood": "high"
+              }
+            ],
+            "fixes": [
+              {
+                "step": "Send HSTS once HTTPS works on every subdomain; start with a short max-age and raise it.",
+                "snippets": {
+                  "apache": "Header always set Strict-Transport-Security \"max-age=86400\"",
+                  "iis": "\u003cadd name=\"Strict-Transport-Security\" value=\"max-age=86400\" /\u003e",
+                  "nginx": "add_header Strict-Transport-Security \"max-age=86400\" always;   # raise to 31536000 later"
+                },
+                "verify": "curl -sI https://mixed.ddemo-site.com/ shows the header."
+              }
+            ],
+            "cannot_determine": [
+              "Whether all subdomains support HTTPS."
+            ],
+            "warnings": [
+              "With includeSubDomains or preload, every subdomain must support HTTPS, or browsers will refuse to load them."
+            ]
+          },
+          {
+            "rule_id": "content.security-headers",
+            "title": "Recommended security headers missing",
+            "layer": "content",
+            "severity": "info",
+            "confidence": 0.8,
+            "level": "high",
+            "verdict": "Some recommended security headers are missing (see evidence)",
+            "evidence": [
+              "missing: content-security-policy, x-content-type-options, referrer-policy"
+            ],
+            "causes": [
+              {
+                "text": "The headers were never configured.",
+                "likelihood": "high"
+              }
+            ],
+            "fixes": [
+              {
+                "step": "Add the missing headers; start the Content-Security-Policy in report-only mode.",
+                "snippets": {
+                  "apache": "Header always set X-Content-Type-Options \"nosniff\"\nHeader always set Referrer-Policy \"strict-origin-when-cross-origin\"\nHeader always set Content-Security-Policy-Report-Only \"default-src 'self'\"",
+                  "nginx": "add_header X-Content-Type-Options \"nosniff\" always;\nadd_header Referrer-Policy \"strict-origin-when-cross-origin\" always;\nadd_header Content-Security-Policy-Report-Only \"default-src 'self'\" always;"
+                },
+                "verify": "curl -sI https://mixed.ddemo-site.com/ shows the headers."
+              }
+            ],
+            "cannot_determine": [
+              "Whether a strict CSP would break your scripts (report-only mode shows this first)."
+            ]
+          },
+          {
+            "rule_id": "content.weak-cache",
+            "title": "Static assets are not cacheable",
+            "layer": "content",
+            "severity": "info",
+            "confidence": 0.75,
+            "level": "medium",
+            "verdict": "Static files have no or very short cache lifetimes, so repeat visits download them again",
+            "evidence": [
+              "2 static resource(s) without useful caching: https://mixed.ddemo-site.com/style.css, http://mixed.ddemo-site.com/app.js"
+            ],
+            "causes": [
+              {
+                "text": "No Cache-Control/Expires rules for static files, or no-store applied site-wide.",
+                "likelihood": "high"
+              }
+            ],
+            "fixes": [
+              {
+                "step": "Give versioned static files a long cache lifetime.",
+                "snippets": {
+                  "apache": "\u003cFilesMatch \"\\.(css|js|woff2?|png|jpe?g|gif|svg|webp|avif)$\"\u003e\n    Header set Cache-Control \"public, max-age=31536000, immutable\"\n\u003c/FilesMatch\u003e",
+                  "nginx": "location ~* \\.(css|js|woff2?|png|jpe?g|gif|svg|webp|avif)$ {\n    add_header Cache-Control \"public, max-age=31536000, immutable\";\n}"
+                },
+                "verify": "curl -sI \u003casset URL\u003e shows a long max-age."
+              }
+            ],
+            "cannot_determine": [
+              "Whether your asset URLs are versioned."
+            ],
+            "warnings": [
+              "Only use long lifetimes for files whose names change when their content changes (versioned or hashed file names).",
+              "nginx: an add_header inside a location replaces every add_header inherited from the server block (security headers such as HSTS disappear for those files). Repeat them in that location, and keep the location's existing proxy_pass/try_files lines."
+            ]
+          }
+        ],
+        "fingerprints": {
+          "cdn": [],
+          "server": [
+            {
+              "id": "nginx",
+              "kind": "server",
+              "name": "nginx",
+              "confidence": 0.7,
+              "level": "medium",
+              "evidence": [
+                "header server: nginx/1.27.5 (GET http://mixed.ddemo-site.com/)"
+              ]
+            }
+          ],
+          "platform": [],
+          "no_cdn": true
+        },
+        "signals": [
+          {
+            "name": "hsts_missing",
+            "evidence": "no Strict-Transport-Security header on https://mixed.ddemo-site.com/"
+          },
+          {
+            "name": "https_ok",
+            "evidence": "GET https://mixed.ddemo-site.com/ → 200"
+          },
+          {
+            "name": "no_cdn",
+            "evidence": "no CDN or WAF detected with at least medium confidence"
+          },
+          {
+            "name": "res_failed",
+            "evidence": "1 resource(s) failed to load: https://mixed.ddemo-site.com/missing.png"
+          },
+          {
+            "name": "res_mixed_content",
+            "evidence": "1 HTTP resource(s) on the HTTPS page: http://mixed.ddemo-site.com/app.js"
+          },
+          {
+            "name": "res_weak_cache",
+            "evidence": "2 static resource(s) without useful caching: https://mixed.ddemo-site.com/style.css, http://mixed.ddemo-site.com/app.js"
+          },
+          {
+            "name": "security_headers_missing",
+            "evidence": "missing: content-security-policy, x-content-type-options, referrer-policy"
+          }
+        ],
+        "matrix": [
+          {
+            "node": "Frankfurt",
+            "spec": "base:https:mixed.ddemo-site.com",
+            "label": "GET https://mixed.ddemo-site.com/",
+            "url": "https://mixed.ddemo-site.com/",
+            "final_url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 262,
+            "ttfb_ms": 28.857,
+            "total_ms": 29.395,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "base:http:mixed.ddemo-site.com",
+            "label": "GET http://mixed.ddemo-site.com/",
+            "url": "http://mixed.ddemo-site.com/",
+            "final_url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "hops": 2,
+            "proto": "HTTP/2.0",
+            "body_size": 262,
+            "ttfb_ms": 15.901,
+            "total_ms": 15.901,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "head",
+            "label": "HEAD https://mixed.ddemo-site.com/",
+            "url": "https://mixed.ddemo-site.com/",
+            "final_url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 0,
+            "ttfb_ms": 20.763,
+            "total_ms": 21.307,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "ua:curl",
+            "label": "GET https://mixed.ddemo-site.com/ curl UA",
+            "url": "https://mixed.ddemo-site.com/",
+            "final_url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 262,
+            "ttfb_ms": 46.113,
+            "total_ms": 46.113,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "ua:googlebot",
+            "label": "GET https://mixed.ddemo-site.com/ googlebot UA",
+            "url": "https://mixed.ddemo-site.com/",
+            "final_url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 262,
+            "ttfb_ms": 37.559,
+            "total_ms": 37.559,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "proto:h1",
+            "label": "GET https://mixed.ddemo-site.com/ HTTP/1.1",
+            "url": "https://mixed.ddemo-site.com/",
+            "final_url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/1.1",
+            "body_size": 262,
+            "ttfb_ms": 44.594,
+            "total_ms": 44.594,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "proto:h2",
+            "label": "GET https://mixed.ddemo-site.com/ HTTP/2",
+            "url": "https://mixed.ddemo-site.com/",
+            "final_url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 262,
+            "ttfb_ms": 52.642,
+            "total_ms": 52.642,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "enc:gzip",
+            "label": "GET https://mixed.ddemo-site.com/ gzip",
+            "url": "https://mixed.ddemo-site.com/",
+            "final_url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 262,
+            "ttfb_ms": 53.192,
+            "total_ms": 53.751,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Frankfurt",
+            "spec": "enc:identity",
+            "label": "GET https://mixed.ddemo-site.com/ no compression",
+            "url": "https://mixed.ddemo-site.com/",
+            "final_url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 262,
+            "ttfb_ms": 41.668,
+            "total_ms": 41.668,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Tehran",
+            "spec": "base:https:mixed.ddemo-site.com",
+            "label": "GET https://mixed.ddemo-site.com/",
+            "url": "https://mixed.ddemo-site.com/",
+            "final_url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 262,
+            "ttfb_ms": 39.078,
+            "total_ms": 39.769,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Tehran",
+            "spec": "base:http:mixed.ddemo-site.com",
+            "label": "GET http://mixed.ddemo-site.com/",
+            "url": "http://mixed.ddemo-site.com/",
+            "final_url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "hops": 2,
+            "proto": "HTTP/2.0",
+            "body_size": 262,
+            "ttfb_ms": 22.619,
+            "total_ms": 22.619,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Tehran",
+            "spec": "head",
+            "label": "HEAD https://mixed.ddemo-site.com/",
+            "url": "https://mixed.ddemo-site.com/",
+            "final_url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 0,
+            "ttfb_ms": 54.659,
+            "total_ms": 55.182,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Tehran",
+            "spec": "ua:curl",
+            "label": "GET https://mixed.ddemo-site.com/ curl UA",
+            "url": "https://mixed.ddemo-site.com/",
+            "final_url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 262,
+            "ttfb_ms": 38.25,
+            "total_ms": 38.25,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Tehran",
+            "spec": "ua:googlebot",
+            "label": "GET https://mixed.ddemo-site.com/ googlebot UA",
+            "url": "https://mixed.ddemo-site.com/",
+            "final_url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 262,
+            "ttfb_ms": 44.594,
+            "total_ms": 44.594,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Tehran",
+            "spec": "proto:h1",
+            "label": "GET https://mixed.ddemo-site.com/ HTTP/1.1",
+            "url": "https://mixed.ddemo-site.com/",
+            "final_url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/1.1",
+            "body_size": 262,
+            "ttfb_ms": 26.675,
+            "total_ms": 26.675,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Tehran",
+            "spec": "proto:h2",
+            "label": "GET https://mixed.ddemo-site.com/ HTTP/2",
+            "url": "https://mixed.ddemo-site.com/",
+            "final_url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 262,
+            "ttfb_ms": 21.995,
+            "total_ms": 21.995,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Tehran",
+            "spec": "enc:gzip",
+            "label": "GET https://mixed.ddemo-site.com/ gzip",
+            "url": "https://mixed.ddemo-site.com/",
+            "final_url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 262,
+            "ttfb_ms": 18.19,
+            "total_ms": 18.19,
+            "server": "nginx/1.27.5"
+          },
+          {
+            "node": "Tehran",
+            "spec": "enc:identity",
+            "label": "GET https://mixed.ddemo-site.com/ no compression",
+            "url": "https://mixed.ddemo-site.com/",
+            "final_url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "proto": "HTTP/2.0",
+            "body_size": 262,
+            "ttfb_ms": 42.763,
+            "total_ms": 42.763,
+            "server": "nginx/1.27.5"
+          }
+        ],
+        "resources": {
+          "page": {
+            "url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "size": 262,
+            "content_type": "text/html",
+            "ttfb_ms": 9.801,
+            "found": 3,
+            "checked": 3
+          },
+          "resources": [
+            {
+              "url": "https://mixed.ddemo-site.com/style.css",
+              "host": "mixed.ddemo-site.com",
+              "kind": "stylesheet",
+              "third_party": false,
+              "status": 200,
+              "ttfb_ms": 10.521,
+              "total_ms": 12.575,
+              "size": 29,
+              "content_type": "text/css",
+              "issues": [
+                "weak_cache"
+              ]
+            },
+            {
+              "url": "http://mixed.ddemo-site.com/app.js",
+              "host": "mixed.ddemo-site.com",
+              "kind": "script",
+              "third_party": false,
+              "status": 200,
+              "ttfb_ms": 10.657,
+              "total_ms": 11.202,
+              "size": 21,
+              "content_type": "application/javascript",
+              "issues": [
+                "mixed_content",
+                "weak_cache"
+              ]
+            },
+            {
+              "url": "https://mixed.ddemo-site.com/missing.png",
+              "host": "mixed.ddemo-site.com",
+              "kind": "image",
+              "third_party": false,
+              "status": 404,
+              "ttfb_ms": 7.305,
+              "total_ms": 7.305,
+              "size": 555,
+              "content_type": "text/html",
+              "issues": [
+                "failed"
+              ]
+            }
+          ]
+        },
+        "chains": [
+          {
+            "start": "https://mixed.ddemo-site.com/",
+            "hops": [
+              {
+                "url": "https://mixed.ddemo-site.com/",
+                "method": "GET",
+                "proto": "HTTP/2.0",
+                "all_headers": {
+                  "accept-ranges": [
+                    "bytes"
+                  ],
+                  "content-length": [
+                    "262"
+                  ],
+                  "content-type": [
+                    "text/html"
+                  ],
+                  "date": [
+                    "Thu, 15 Oct 2026 01:28:06 GMT"
+                  ],
+                  "etag": [
+                    "\"6ad0292e-106\""
+                  ],
+                  "last-modified": [
+                    "Thu, 15 Oct 2026 01:15:26 GMT"
+                  ],
+                  "server": [
+                    "nginx/1.27.5"
+                  ]
+                },
+                "body_size": 262,
+                "ip": "127.0.0.1",
+                "status": 200,
+                "status_text": "OK",
+                "server": "nginx/1.27.5",
+                "headers": {
+                  "Content-Type": "text/html",
+                  "Server": "nginx/1.27.5"
+                },
+                "timing": {
+                  "dns_ms": 0,
+                  "connect_ms": 1.628,
+                  "tls_ms": 11.797,
+                  "ttfb_ms": 28.857,
+                  "total_ms": 29.395
+                },
+                "tls": {
+                  "version": "TLS 1.3",
+                  "cipher": "TLS_AES_128_GCM_SHA256",
+                  "subject": "*.ddemo-site.com",
+                  "issuer": "Domain Doctor Demo CA",
+                  "not_before": "2026-10-15T00:16:29Z",
+                  "not_after": "2027-01-13T01:16:29Z",
+                  "days_left": 89,
+                  "sans": [
+                    "*.ddemo-site.com",
+                    "ddemo-site.com"
+                  ],
+                  "hostname_match": true,
+                  "chain_valid": true,
+                  "chain_length": 2
+                }
+              }
+            ]
+          },
+          {
+            "start": "http://mixed.ddemo-site.com/",
+            "hops": [
+              {
+                "url": "http://mixed.ddemo-site.com/",
+                "method": "GET",
+                "proto": "HTTP/1.1",
+                "all_headers": {
+                  "content-length": [
+                    "169"
+                  ],
+                  "content-type": [
+                    "text/html"
+                  ],
+                  "date": [
+                    "Thu, 15 Oct 2026 01:28:06 GMT"
+                  ],
+                  "location": [
+                    "https://mixed.ddemo-site.com/"
+                  ],
+                  "server": [
+                    "nginx/1.27.5"
+                  ]
+                },
+                "body_size": 169,
+                "ip": "127.0.0.1",
+                "status": 301,
+                "status_text": "Moved Permanently",
+                "location": "https://mixed.ddemo-site.com/",
+                "server": "nginx/1.27.5",
+                "headers": {
+                  "Content-Type": "text/html",
+                  "Server": "nginx/1.27.5"
+                },
+                "timing": {
+                  "dns_ms": 0,
+                  "connect_ms": 0.536,
+                  "tls_ms": 0,
+                  "ttfb_ms": 8.658,
+                  "total_ms": 8.658
+                }
+              },
+              {
+                "url": "https://mixed.ddemo-site.com/",
+                "method": "GET",
+                "proto": "HTTP/2.0",
+                "all_headers": {
+                  "accept-ranges": [
+                    "bytes"
+                  ],
+                  "content-length": [
+                    "262"
+                  ],
+                  "content-type": [
+                    "text/html"
+                  ],
+                  "date": [
+                    "Thu, 15 Oct 2026 01:28:06 GMT"
+                  ],
+                  "etag": [
+                    "\"6ad0292e-106\""
+                  ],
+                  "last-modified": [
+                    "Thu, 15 Oct 2026 01:15:26 GMT"
+                  ],
+                  "server": [
+                    "nginx/1.27.5"
+                  ]
+                },
+                "body_size": 262,
+                "ip": "127.0.0.1",
+                "status": 200,
+                "status_text": "OK",
+                "server": "nginx/1.27.5",
+                "headers": {
+                  "Content-Type": "text/html",
+                  "Server": "nginx/1.27.5"
+                },
+                "timing": {
+                  "dns_ms": 0,
+                  "connect_ms": 2.063,
+                  "tls_ms": 5.843,
+                  "ttfb_ms": 15.901,
+                  "total_ms": 15.901
+                },
+                "tls": {
+                  "version": "TLS 1.3",
+                  "cipher": "TLS_AES_128_GCM_SHA256",
+                  "subject": "*.ddemo-site.com",
+                  "issuer": "Domain Doctor Demo CA",
+                  "not_before": "2026-10-15T00:16:29Z",
+                  "not_after": "2027-01-13T01:16:29Z",
+                  "days_left": 89,
+                  "sans": [
+                    "*.ddemo-site.com",
+                    "ddemo-site.com"
+                  ],
+                  "hostname_match": true,
+                  "chain_valid": true,
+                  "chain_length": 2
+                }
+              }
+            ]
+          }
+        ],
+        "nodes": [
+          {
+            "node": "Frankfurt",
+            "location": "DE (demo)",
+            "url": "https://mixed.ddemo-site.com/",
+            "final_url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "total_ms": 29.395,
+            "ok": true
+          },
+          {
+            "node": "Frankfurt",
+            "location": "DE (demo)",
+            "url": "http://mixed.ddemo-site.com/",
+            "final_url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "hops": 2,
+            "total_ms": 24.558999999999997,
+            "ok": true
+          },
+          {
+            "node": "Tehran",
+            "location": "IR (demo)",
+            "url": "https://mixed.ddemo-site.com/",
+            "final_url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "hops": 1,
+            "total_ms": 39.769,
+            "ok": true
+          },
+          {
+            "node": "Tehran",
+            "location": "IR (demo)",
+            "url": "http://mixed.ddemo-site.com/",
+            "final_url": "https://mixed.ddemo-site.com/",
+            "status": 200,
+            "hops": 2,
+            "total_ms": 41.294,
+            "ok": true
+          }
+        ],
+        "tls": {
+          "mixed.ddemo-site.com": {
+            "version": "TLS 1.3",
+            "cipher": "TLS_AES_128_GCM_SHA256",
+            "subject": "*.ddemo-site.com",
+            "issuer": "Domain Doctor Demo CA",
+            "not_before": "2026-10-15T00:16:29Z",
+            "not_after": "2027-01-13T01:16:29Z",
+            "days_left": 89,
+            "sans": [
+              "*.ddemo-site.com",
+              "ddemo-site.com"
+            ],
+            "hostname_match": true,
+            "chain_valid": true,
+            "chain_length": 2
+          }
+        }
+      },
+      "started_at": "2026-10-15T01:28:06.9410327Z",
+      "duration_ms": 109
+    }
+  ],
+  "diagnosis": {
+    "healthy": false,
+    "headline": "No blocking problem found, but there are warnings worth fixing.",
+    "other_causes": [],
+    "symptoms": [],
+    "fixes": [
+      {
+        "priority": 3,
+        "title": "Mixed content (HTTP resources on an HTTPS page)",
+        "action": "Change the resource URLs to https:// (or protocol-relative/relative URLs). (see the Website load section for all steps and server-specific snippets)",
+        "code": "load.content.mixed",
+        "layer": "web"
+      },
+      {
+        "priority": 3,
+        "title": "Page resources fail to load",
+        "action": "Fix or remove the failing URLs; for third-party files, self-host critical assets or add fallbacks.",
+        "code": "load.content.res-failed",
+        "layer": "web"
+      }
+    ]
+  }
+}

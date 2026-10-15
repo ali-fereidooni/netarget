@@ -1,15 +1,15 @@
 # Domain Doctor report: expired-shop.com
 
-- Checked: 2026-10-14 20:46:38 UTC
-- Request ID: `bef6c6b9afde5de12814fa397f9ff546ce1844d4`
+- Checked: 2026-10-15 01:28:05 UTC
+- Request ID: `1476c2292fe05d4b49b874b2d2e9a5153fc4b9fc`
 - Measurement nodes: Frankfurt (DE (demo)), Tehran (IR (demo))
 
 ## Diagnosis
 
 **The domain registration has expired**
 
-- Root cause (registration): The domain expired 13 day(s) ago (2026-10-02).
-- Evidence: `expiry date 2026-10-02`
+- Root cause (registration): The domain expired 13 day(s) ago (2026-10-03).
+- Evidence: `expiry date 2026-10-03`
 
 Symptoms explained by the cause:
 
@@ -18,7 +18,7 @@ Symptoms explained by the cause:
 - None of the delegated name servers answers authoritatively for the domain, so it cannot resolve anywhere. — explained by `reg.expired`
 - DNS zone was not checked: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively) — explained by `reg.expired`
 - Reachability was not checked: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively) — explained by `reg.expired`
-- Web server was not checked: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively) — explained by `reg.expired`
+- Website load was not checked: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively) — explained by `reg.expired`
 
 ### Fixes (in priority order)
 
@@ -32,11 +32,11 @@ Symptoms explained by the cause:
 | Name servers | ❌ FAIL | 2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively |
 | DNS zone | ⏭️ SKIPPED | Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively) |
 | Reachability | ⏭️ SKIPPED | Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively) |
-| Web server | ⏭️ SKIPPED | Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively) |
+| Website load | ⏭️ SKIPPED | Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively) |
 
 ### ❌ Domain registration — FAIL
 
-- **FAIL** `reg.expired` The domain expired 13 day(s) ago (2026-10-02). (`expiry date 2026-10-02`)
+- **FAIL** `reg.expired` The domain expired 13 day(s) ago (2026-10-03). (`expiry date 2026-10-03`)
 - **INFO** `reg.auto_renew_grace` The registry auto-renewed the domain; the registrar may still delete it if unpaid. (`EPP status autoRenewPeriod`)
 
 ### ❌ Name servers — FAIL
@@ -47,7 +47,7 @@ Symptoms explained by the cause:
 
 | Name server | IP | Status | AA | Serial | RTT ms |
 |---|---|---|---|---|---|
-| ns1.parking-host.net. | 4.0.0.1 | lame | false | 0 | 0.0 |
+| ns1.parking-host.net. | 4.0.0.1 | lame | false | 0 | 0.5 |
 | ns2.parking-host.net. | 4.0.1.1 | lame | false | 0 | 0.5 |
 
 ### ⏭️ DNS zone — SKIPPED
@@ -58,6 +58,6 @@ Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresse
 
 Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)
 
-### ⏭️ Web server — SKIPPED
+### ⏭️ Website load — SKIPPED
 
 Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)

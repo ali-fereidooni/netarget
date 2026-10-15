@@ -107,6 +107,7 @@ func (s *Server) StartBackground(ctx context.Context) {
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/check", s.startCheck)
+	mux.HandleFunc("POST /api/web-diagnose", s.webDiagnose)
 	mux.HandleFunc("GET /api/check/{id}", s.getCheck)
 	mux.HandleFunc("GET /api/nodes", s.getNodes)
 	mux.HandleFunc("GET /api/traceroute", s.traceroute)
@@ -162,14 +163,21 @@ const msgRateLimited = "rate limited — try again in a minute"
 
 // ---- checks ----
 
-func (s *Server) startCheck(w http.ResponseWriter, r *http.Request) {
+func (s *Server) startCheck(w http.ResponseWriter, r *http.Request) { s.start(w, r, false) }
+
+// webDiagnose is the Website Load entry point: the same pipeline, limits and
+// reports as /api/check, plus an optional origin IP for the origin-direct test.
+func (s *Server) webDiagnose(w http.ResponseWriter, r *http.Request) { s.start(w, r, true) }
+
+func (s *Server) start(w http.ResponseWriter, r *http.Request, allowOrigin bool) {
 	ip := s.cfg.ClientIP.Key(r)
 	if !s.general.Allow(ip) {
 		writeErr(w, http.StatusTooManyRequests, msgRateLimited)
 		return
 	}
 	var body struct {
-		Domain string `json:"domain"`
+		Domain   string `json:"domain"`
+		OriginIP string `json:"originIp"`
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, 4096)
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -180,6 +188,17 @@ func (s *Server) startCheck(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeErr(w, http.StatusBadRequest, err.Error())
 		return
+	}
+	var opts orchestrator.Options
+	if body.OriginIP != "" {
+		if !allowOrigin {
+			writeErr(w, http.StatusBadRequest, "originIp is only accepted by /api/web-diagnose")
+			return
+		}
+		if opts.OriginIP, err = input.ParseOriginIP(body.OriginIP); err != nil {
+			writeErr(w, http.StatusBadRequest, err.Error())
+			return
+		}
 	}
 	release, ok := s.gate.TryAcquire(ip)
 	if !ok {
@@ -206,7 +225,7 @@ func (s *Server) startCheck(w http.ResponseWriter, r *http.Request) {
 				job.publish(orchestrator.Event{Type: "done", Report: &orchestrator.Report{ID: id, Domain: d, Status: "error"}})
 			}
 		}()
-		orchestrator.Run(ctx, s.cfg.Deps, d, id, job.publish)
+		orchestrator.RunWith(ctx, s.cfg.Deps, d, id, opts, job.publish)
 		s.cfg.Log.Printf("check %s done for %s", id, d.Name)
 	}()
 	writeJSON(w, http.StatusAccepted, map[string]any{

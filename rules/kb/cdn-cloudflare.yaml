@@ -1,0 +1,455 @@
+# Cloudflare edge errors (5xx 52x family and 1xxx error pages).
+# Codes and meanings follow Cloudflare's public troubleshooting documentation.
+
+- id: cf.520
+  title: Cloudflare 520 — the origin returned an empty or unexpected response
+  layer: server
+  severity: fail
+  group: cdn-5xx
+  match:
+    all:
+      - status: [520]
+      - cdn: [cloudflare]
+  confidence:
+    base: 0.8
+    boosts:
+      - {when: {signal: origin_ok_cdn_fail}, add: 0.1, why: "the origin answers when contacted directly"}
+  verdict: "Cloudflare reached your origin server but got an empty or invalid reply (error 520)"
+  causes:
+    - {text: "The web server or application crashed or closed the connection without sending a response.", likelihood: high}
+    - {text: "Response headers are too large (often huge cookies) or malformed.", likelihood: medium}
+    - {text: "A firewall or security module on the origin resets connections from Cloudflare.", likelihood: medium}
+  fixes:
+    - step: "Look at the origin web server and application error logs at the time of the failing request."
+      why: "A 520 means something answered, then gave up; the reason is only in the origin's logs."
+      snippets:
+        apache: "tail -n 100 /var/log/apache2/error.log    # Debian/Ubuntu\ntail -n 100 /var/log/httpd/error_log      # RHEL/CentOS"
+        nginx: "tail -n 100 /var/log/nginx/error.log"
+        litespeed: "tail -n 100 /usr/local/lsws/logs/error.log"
+        iis: "Event Viewer → Windows Logs → Application, and %SystemDrive%\\inetpub\\logs\\LogFiles"
+      verify: "Reload the page; the 520 should be gone and the error log should show no new crash."
+    - step: "Make sure response headers stay small: trim cookies and avoid very long headers."
+      verify: "curl -sI --resolve {host}:443:ORIGIN_IP https://{host}/ | wc -c   # origin's own headers, well under 16 KB"
+    - step: "Allow all Cloudflare IP ranges in the origin firewall and in any security plugin."
+      applies_to: [firewall]
+      snippets:
+        firewall: "for ip in $(curl -s https://www.cloudflare.com/ips-v4); do sudo ufw allow from $ip to any port 443 proto tcp; done"
+      verify: "From the origin: no Cloudflare addresses appear as blocked in the firewall log."
+  cannot_determine:
+    - "The origin's error log (the actual crash or reset reason)."
+    - "Whether only some origin servers behind a load balancer fail."
+  tests:
+    - name: cloudflare 520
+      given: {status: 520, cdn: cloudflare}
+      expect: match
+    - name: 520 without cloudflare is not this rule
+      given: {status: 520, cdn: none}
+      expect: no_match
+
+- id: cf.521
+  title: Cloudflare 521 — the origin refused the connection
+  layer: server
+  severity: fail
+  group: cdn-5xx
+  match:
+    all:
+      - status: [521]
+      - cdn: [cloudflare]
+  confidence:
+    base: 0.85
+    boosts:
+      - {when: {signal: origin_fail_too}, add: 0.1, why: "the origin also fails when contacted directly"}
+  verdict: "Cloudflare cannot connect to your origin server: the connection was refused (error 521)"
+  causes:
+    - {text: "The web server (nginx, Apache, LiteSpeed, IIS) is stopped or crashed.", likelihood: high}
+    - {text: "The origin firewall blocks Cloudflare's IP ranges (often a security plugin or fail2ban).", likelihood: high}
+    - {text: "The server does not listen on port 80/443, or the DNS record points to the wrong IP.", likelihood: medium}
+  fixes:
+    - step: "Check that the web server is running and listening on ports 80 and 443."
+      snippets:
+        nginx: "sudo systemctl status nginx\nsudo ss -ltnp | grep -E ':(80|443) '"
+        apache: "sudo systemctl status apache2   # or httpd\nsudo ss -ltnp | grep -E ':(80|443) '"
+        litespeed: "sudo systemctl status lsws\nsudo ss -ltnp | grep -E ':(80|443) '"
+        iis: "Get-Service W3SVC\nnetstat -ano | findstr \":443\""
+      verify: "The service is active and ports 80/443 are in LISTEN state."
+    - step: "Allow Cloudflare's IP ranges in the origin firewall (and in fail2ban/CSF/security plugins)."
+      applies_to: [firewall]
+      snippets:
+        firewall: "for ip in $(curl -s https://www.cloudflare.com/ips-v4) $(curl -s https://www.cloudflare.com/ips-v6); do\n  sudo ufw allow proto tcp from $ip to any port 80,443\ndone"
+      verify: "curl -sI --resolve {host}:443:ORIGIN_IP https://{host}/ from another server returns an HTTP status."
+    - step: "Confirm the A/AAAA record in the Cloudflare DNS tab points to the current origin IP."
+      applies_to: [cloudflare]
+      verify: "The IP in Cloudflare DNS matches the server's public IP (curl -4 ifconfig.me on the server)."
+  cannot_determine:
+    - "Whether the service is stopped or the firewall is blocking (both look the same from outside)."
+    - "The origin firewall configuration."
+  tests:
+    - name: cloudflare 521
+      given: {status: 521, cdn: cloudflare, signals: [origin_fail_too]}
+      expect: match
+      min_confidence: 0.9
+
+- id: cf.522
+  title: Cloudflare 522 — connection to the origin timed out
+  layer: network
+  severity: fail
+  group: cdn-5xx
+  match:
+    all:
+      - status: [522]
+      - cdn: [cloudflare]
+  confidence: {base: 0.85}
+  verdict: "Cloudflare timed out connecting to your origin server (error 522)"
+  causes:
+    - {text: "The origin firewall silently drops Cloudflare's connections.", likelihood: high}
+    - {text: "The origin is overloaded and cannot accept new TCP connections.", likelihood: medium}
+    - {text: "The DNS record points to the wrong or an offline IP.", likelihood: medium}
+  fixes:
+    - step: "Allow Cloudflare's IP ranges on ports 80 and 443 in every firewall layer (OS firewall, cloud security group, hosting panel)."
+      applies_to: [firewall]
+      snippets:
+        firewall: "for ip in $(curl -s https://www.cloudflare.com/ips-v4); do sudo ufw allow proto tcp from $ip to any port 80,443; done"
+      verify: "The firewall log shows no drops for Cloudflare addresses; the 522 stops."
+    - step: "Check server load: CPU, memory, and connection limits (worker_connections, MaxRequestWorkers)."
+      snippets:
+        nginx: "# /etc/nginx/nginx.conf\nevents { worker_connections 4096; }"
+        apache: "# mpm_event.conf\nMaxRequestWorkers 400"
+      verify: "uptime and top show normal load; new connections are accepted quickly."
+    - step: "Confirm the origin IP in Cloudflare DNS is correct."
+      applies_to: [cloudflare]
+      verify: "The Cloudflare DNS record matches the server's public IP."
+  cannot_determine:
+    - "The origin's firewall rules and current load."
+  tests:
+    - name: cloudflare 522
+      given: {status: 522, cdn: cloudflare}
+      expect: match
+
+- id: cf.523
+  title: Cloudflare 523 — origin is unreachable
+  layer: network
+  severity: fail
+  group: cdn-5xx
+  match:
+    all:
+      - status: [523]
+      - cdn: [cloudflare]
+  confidence: {base: 0.85}
+  verdict: "Cloudflare cannot route to your origin server (error 523)"
+  causes:
+    - {text: "The origin IP in Cloudflare DNS is wrong or no longer assigned to your server.", likelihood: high}
+    - {text: "A routing problem between Cloudflare and the hosting network.", likelihood: low}
+  fixes:
+    - step: "Correct the A/AAAA records in the Cloudflare DNS tab to the server's current public IP."
+      applies_to: [cloudflare]
+      verify: "curl -sI --resolve {host}:443:ORIGIN_IP https://{host}/ from another server returns an HTTP status (ORIGIN_IP = the IP now in Cloudflare DNS)."
+    - step: "If the IP is right, ask your hosting provider whether the network is reachable."
+      verify: "A traceroute from another network reaches the origin IP."
+  cannot_determine:
+    - "The origin IP configured inside Cloudflare (hidden behind the proxy)."
+  tests:
+    - name: cloudflare 523
+      given: {status: 523, cdn: cloudflare}
+      expect: match
+
+- id: cf.524
+  title: Cloudflare 524 — the origin took too long to respond
+  layer: application
+  severity: fail
+  group: cdn-5xx
+  match:
+    all:
+      - status: [524]
+      - cdn: [cloudflare]
+  confidence: {base: 0.85}
+  verdict: "Your origin accepted Cloudflare's connection but did not answer within 100 seconds (error 524)"
+  causes:
+    - {text: "A slow request: long database query, report generation, external API call.", likelihood: high}
+    - {text: "The server is overloaded (PHP-FPM workers exhausted, CPU saturation).", likelihood: medium}
+  fixes:
+    - step: "Find the slow request in the application or access log and fix or move it to a background job."
+      verify: "The same URL responds in a few seconds when requested directly."
+    - step: "Check PHP-FPM/application worker saturation."
+      applies_to: [php]
+      snippets:
+        php: "grep -i 'max_children' /var/log/php*-fpm.log\n# raise pm.max_children only if RAM allows"
+      verify: "No 'server reached pm.max_children' warnings during load."
+    - step: "For legitimately long operations, serve them from a subdomain that is not proxied (grey cloud) or use async processing."
+      applies_to: [cloudflare]
+      verify: "The long operation completes without a 524."
+      warning: "A grey-cloud (DNS-only) record publishes your origin IP and bypasses Cloudflare's WAF and DDoS protection for that name. Prefer a background job; if you must, protect that hostname with authentication and a firewall."
+  cannot_determine:
+    - "Which request or query is slow (needs application logs or APM)."
+  tests:
+    - name: cloudflare 524
+      given: {status: 524, cdn: cloudflare}
+      expect: match
+
+- id: cf.525
+  title: Cloudflare 525 — SSL handshake with the origin failed
+  layer: tls
+  severity: fail
+  group: cdn-5xx
+  match:
+    all:
+      - status: [525]
+      - cdn: [cloudflare]
+  confidence:
+    base: 0.85
+    boosts:
+      - {when: {signal: origin_https_fail}, add: 0.1, why: "HTTPS fails on the origin when tested directly"}
+  verdict: "Cloudflare cannot complete an SSL handshake with your origin over HTTPS (error 525)"
+  causes:
+    - {text: "The origin has no valid TLS setup on port 443 (no certificate configured for this hostname, or plain HTTP on 443).", likelihood: high}
+    - {text: "The origin does not support SNI or shares no cipher/TLS version with Cloudflare.", likelihood: medium}
+    - {text: "Cloudflare SSL mode is Full or Full (strict) but the origin only serves HTTP.", likelihood: medium}
+  fixes:
+    - step: "Install a certificate for this hostname on the origin (Let's Encrypt or a free Cloudflare Origin CA certificate) and enable TLS on port 443."
+      snippets:
+        nginx: "server {\n    listen 443 ssl;\n    server_name {host} www.{host};\n    ssl_certificate     /etc/ssl/{host}/fullchain.pem;\n    ssl_certificate_key /etc/ssl/{host}/privkey.pem;\n    ssl_protocols TLSv1.2 TLSv1.3;\n}"
+        apache: "<VirtualHost *:443>\n    ServerName {host}\n    SSLEngine on\n    SSLCertificateFile    /etc/ssl/{host}/fullchain.pem\n    SSLCertificateKeyFile /etc/ssl/{host}/privkey.pem\n    SSLProtocol -all +TLSv1.2 +TLSv1.3\n</VirtualHost>"
+        litespeed: "WebAdmin → Listeners → SSL (port 443) → set Private Key and Certificate files; map the virtual host to the listener."
+        iis: "IIS Manager → Site → Bindings → https, port 443, hostname {host}, Require SNI, select the certificate."
+      verify: "openssl s_client -connect ORIGIN_IP:443 -servername {host} </dev/null completes the handshake and shows the certificate ('Verify return code: 0' for a public CA; with a Cloudflare Origin CA certificate, 'unable to get local issuer certificate' is expected)."
+    - step: "Make sure port 443 on the origin is open to Cloudflare's IP ranges."
+      applies_to: [firewall]
+      verify: "openssl s_client (above) connects from an outside server."
+    - step: "In Cloudflare → SSL/TLS, use Full (strict) once the origin certificate is valid; do not switch to Flexible to hide the problem."
+      applies_to: [cloudflare]
+      verify: "The site loads over HTTPS with SSL mode Full (strict)."
+  cannot_determine:
+    - "The exact handshake error Cloudflare saw (not exposed in the error page)."
+    - "The Cloudflare SSL mode setting (only visible in your Cloudflare dashboard)."
+  tests:
+    - name: cloudflare 525
+      given: {status: 525, cdn: cloudflare, signals: [origin_https_fail]}
+      expect: match
+      min_confidence: 0.9
+
+- id: cf.526
+  title: Cloudflare 526 — invalid SSL certificate on the origin
+  layer: tls
+  severity: fail
+  group: cdn-5xx
+  match:
+    all:
+      - status: [526]
+      - cdn: [cloudflare]
+  confidence: {base: 0.9}
+  verdict: "Cloudflare rejects your origin's SSL certificate (error 526, SSL mode Full (strict))"
+  causes:
+    - {text: "The origin certificate has expired.", likelihood: high}
+    - {text: "The certificate is self-signed or from an untrusted CA (not a Cloudflare Origin CA certificate).", likelihood: high}
+    - {text: "The certificate does not include this hostname, or the chain is incomplete.", likelihood: medium}
+  fixes:
+    - step: "Replace the origin certificate with a valid one for {host}: a Let's Encrypt certificate or a Cloudflare Origin CA certificate (trusted by Cloudflare)."
+      snippets:
+        nginx: "sudo certbot --nginx -d {host}   # add -d www.{host} only if www points to this server\nsudo nginx -t && sudo systemctl reload nginx"
+        apache: "sudo certbot --apache -d {host}   # add -d www.{host} only if www points to this server"
+        iis: "Use win-acme (wacs.exe) or import the Cloudflare Origin CA certificate and bind it to the https binding."
+      verify: "openssl s_client -connect ORIGIN_IP:443 -servername {host} </dev/null | openssl x509 -noout -dates -subject"
+    - step: "Serve the full chain (certificate plus intermediates)."
+      snippets:
+        nginx: "ssl_certificate /etc/letsencrypt/live/{host}/fullchain.pem;   # fullchain, not cert.pem"
+        apache: "SSLCertificateFile /etc/letsencrypt/live/{host}/fullchain.pem"
+      verify: "The openssl output shows the intermediate certificate in the chain."
+  warnings:
+    - "Switching Cloudflare to Full (non-strict) or Flexible hides the error but removes certificate validation between Cloudflare and your server. Fix the certificate instead."
+  cannot_determine:
+    - "Which certificate the origin presents to Cloudflare (use the origin-IP test or openssl from outside)."
+  tests:
+    - name: cloudflare 526
+      given: {status: 526, cdn: cloudflare}
+      expect: match
+
+- id: cf.527
+  title: Cloudflare 527 — Railgun connection error (legacy)
+  layer: cdn
+  severity: fail
+  group: cdn-5xx
+  match:
+    all:
+      - status: [527]
+      - cdn: [cloudflare]
+  confidence: {base: 0.7}
+  verdict: "Cloudflare reports a Railgun listener error (527); Railgun is retired, so this setup is outdated"
+  causes:
+    - {text: "A legacy Railgun listener between Cloudflare and the origin is down or misconfigured.", likelihood: high}
+  fixes:
+    - step: "Remove the Railgun configuration in Cloudflare and connect directly (or with Argo/Cloudflare Tunnel)."
+      applies_to: [cloudflare]
+      verify: "The site loads without a 527."
+  cannot_determine:
+    - "The Railgun listener's state on your network."
+  tests:
+    - name: cloudflare 527
+      given: {status: 527, cdn: cloudflare}
+      expect: match
+
+- id: cf.530
+  title: Cloudflare 530 — origin error with a 1xxx code
+  layer: cdn
+  severity: fail
+  group: cdn-1xxx
+  match:
+    all:
+      - status: [530]
+      - cdn: [cloudflare]
+  confidence:
+    base: 0.75
+    boosts:
+      - {when: {body: 'Error 1016|error code: 1016'}, add: 0.15, why: "1016: origin DNS error"}
+      - {when: {body: 'Error 1033|error code: 1033'}, add: 0.15, why: "1033: Cloudflare Tunnel error"}
+  verdict: "Cloudflare returned 530 together with a 1xxx error ({cf_code}): it cannot resolve or reach the configured origin"
+  causes:
+    - {text: "Error 1016: the origin is a hostname (CNAME) that does not resolve.", likelihood: high}
+    - {text: "Error 1033: the Cloudflare Tunnel (cloudflared) for this hostname is not running.", likelihood: medium}
+  fixes:
+    - step: "If the page shows 1016: fix the CNAME/origin hostname in Cloudflare DNS so it resolves to your server."
+      applies_to: [cloudflare]
+      verify: "dig +short <origin hostname> returns the server's IP."
+    - step: "If the page shows 1033: start cloudflared on the origin and check its logs."
+      snippets:
+        any: "sudo systemctl status cloudflared\nsudo journalctl -u cloudflared -n 50"
+      verify: "cloudflared shows registered tunnel connections."
+  cannot_determine:
+    - "The origin hostname or tunnel configured in your Cloudflare account."
+  tests:
+    - name: 530 with 1016
+      given: {status: 530, cdn: cloudflare, body: "Error 1016 Origin DNS error"}
+      expect: match
+      min_confidence: 0.9
+
+- id: cf.1000-dns
+  title: Cloudflare 1000-series DNS error
+  layer: dns
+  severity: fail
+  group: cdn-1xxx
+  match:
+    all:
+      - cdn: [cloudflare]
+      - body: 'Error (1000|1001|1002|1003|1004|1014|1016)\b|error code: (1000|1001|1002|1003|1004|1014|1016)\b'
+    none:
+      - status_range: 200-399    # a working page that merely mentions the code
+  confidence: {base: 0.85}
+  verdict: "Cloudflare shows a DNS/configuration error page ({cf_code}) instead of your site"
+  causes:
+    - {text: "1000: a DNS record in Cloudflare points to a Cloudflare IP (loop) or a prohibited address.", likelihood: medium}
+    - {text: "1001: the hostname is not configured in Cloudflare or points to a CNAME that is not on Cloudflare.", likelihood: medium}
+    - {text: "1003: the site was requested by IP address or with a Host header Cloudflare does not know.", likelihood: medium}
+    - {text: "1016: the origin hostname (CNAME target) does not resolve.", likelihood: medium}
+    - {text: "1014: a CNAME crosses into another Cloudflare account (CNAME cross-user ban).", likelihood: low}
+  fixes:
+    - step: "In Cloudflare DNS, make sure the record for this hostname points to your server's real IP, not to a Cloudflare IP or a non-resolving CNAME."
+      applies_to: [cloudflare]
+      verify: "The error page is gone and the site loads."
+    - step: "If you use a CNAME origin, confirm the target resolves."
+      snippets:
+        dns: "dig +short <cname-target>"
+      verify: "The CNAME target returns an A/AAAA record."
+  cannot_determine:
+    - "The DNS records stored in your Cloudflare account (proxied records hide the origin)."
+  tests:
+    - name: 1016 page
+      given: {status: 530, cdn: cloudflare, body: "<title>Origin DNS error | example.com | Cloudflare</title> Error 1016"}
+      expect: match
+    - name: 1020 is not a DNS error
+      given: {status: 403, cdn: cloudflare, body: "Error 1020 Access denied"}
+      expect: no_match
+
+- id: cf.1015
+  title: Cloudflare 1015 — rate limited
+  layer: cdn
+  severity: warn
+  group: cdn-1xxx
+  match:
+    all:
+      - cdn: [cloudflare]
+      - body: 'Error 1015|error code: 1015|You are being rate limited'
+    none:
+      - status_range: 200-399
+  confidence: {base: 0.9}
+  verdict: "Cloudflare rate limiting blocked the request (error 1015)"
+  causes:
+    - {text: "A Cloudflare rate-limiting rule matched this client (too many requests from one IP).", likelihood: high}
+  fixes:
+    - step: "In Cloudflare → Security → WAF → Rate limiting rules, check the threshold and scope; raise it or exclude legitimate paths/clients."
+      applies_to: [cloudflare]
+      verify: "Security → Events no longer show rate-limit blocks for normal users."
+  cannot_determine:
+    - "Your rate-limiting rule settings and which client IPs hit them."
+  tests:
+    - name: 1015
+      given: {status: 429, cdn: cloudflare, body: "Error 1015 You are being rate limited"}
+      expect: match
+
+- id: cf.1020
+  title: Cloudflare 1020 — access denied by a firewall rule
+  layer: cdn
+  severity: fail
+  group: status-403      # competes with the origin 403 rules; the Cloudflare page wins
+  priority: 1
+  match:
+    all:
+      - cdn: [cloudflare]
+      - body: 'Error 1020|error code: 1020|Access denied.*Cloudflare'
+    none:
+      - status_range: 200-399
+  confidence:
+    base: 0.85
+    boosts:
+      - {when: {signal: browser_ua_blocked}, add: 0.1, why: "the browser User-Agent is blocked while others get through"}
+  verdict: "A Cloudflare firewall (WAF) rule denies access to the site (error 1020)"
+  causes:
+    - {text: "A custom WAF rule blocks by country, IP, ASN or User-Agent.", likelihood: high}
+    - {text: "Bot Fight Mode or a managed rule challenges/blocks this client type.", likelihood: medium}
+  fixes:
+    - step: "Open Cloudflare → Security → Events, find the blocked request (by Ray ID) and adjust or add an exception to the matching rule."
+      applies_to: [cloudflare]
+      verify: "The same request is allowed; Security Events shows no new block."
+    - step: "Prefer narrowing the rule (path, country, specific bot) over disabling it."
+      applies_to: [cloudflare]
+      verify: "Legitimate visitors load the site while the rule still blocks the intended traffic."
+  cannot_determine:
+    - "Which rule matched (visible only in Cloudflare Security Events)."
+  tests:
+    - name: 1020
+      given: {status: 403, cdn: cloudflare, body: "Access denied | example.com used Cloudflare to restrict access. Error 1020"}
+      expect: match
+    - name: a working page that mentions 1020
+      given: {status: 200, cdn: cloudflare, body: "<h1>How we fixed Error 1020</h1>"}
+      expect: no_match
+
+- id: cf.flexible-loop
+  title: Redirect loop caused by Cloudflare Flexible SSL
+  layer: cdn
+  severity: fail
+  group: redirect-loop
+  priority: 1
+  match:
+    all:
+      - signal: redirect_loop
+      - cdn: [cloudflare]
+  confidence: {base: 0.85}
+  verdict: "The site redirects forever: Cloudflare connects to the origin over HTTP while the origin forces HTTPS (Flexible SSL loop)"
+  causes:
+    - {text: "Cloudflare SSL mode is Flexible, and the origin redirects HTTP to HTTPS, so every request bounces back.", likelihood: high}
+    - {text: "Both a Cloudflare redirect rule and the origin redirect to different canonical hosts (www vs apex).", likelihood: medium}
+  fixes:
+    - step: "Install a certificate on the origin and set Cloudflare → SSL/TLS to Full (strict)."
+      applies_to: [cloudflare]
+      verify: "curl -sIL https://{host}/ ends with HTTP 200 after at most one redirect."
+    - step: "Keep exactly one place that redirects to the canonical URL (either Cloudflare 'Always Use HTTPS' or the origin), not two that disagree."
+      snippets:
+        apache: "RewriteEngine On\nRewriteCond %{HTTPS} off\nRewriteCond %{HTTP:X-Forwarded-Proto} !https\nRewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]"
+        nginx: "# only redirect when the original client request was HTTP\nif ($http_x_forwarded_proto = \"http\") { return 301 https://$host$request_uri; }"
+      verify: "The redirect chain is http → https → 200 with no repeats."
+  cannot_determine:
+    - "The Cloudflare SSL mode and redirect rules in your dashboard."
+  tests:
+    - name: loop behind cloudflare
+      given: {status: 301, cdn: cloudflare, signals: [redirect_loop]}
+      expect: match
+    - name: loop without CDN is another rule
+      given: {status: 301, cdn: none, signals: [redirect_loop]}
+      expect: no_match

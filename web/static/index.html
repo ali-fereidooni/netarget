@@ -89,6 +89,15 @@
         </div>
         <button id="go" type="submit" class="btn primary"><svg class="icon"><use href="#i-search"/></svg><span data-i18n="check">Check</span></button>
       </div>
+      <details class="adv" id="adv">
+        <summary data-i18n="advanced">Advanced: test the origin server directly</summary>
+        <label for="origin" class="search-label" data-i18n="originLabel">Origin server IP (optional)</label>
+        <div class="field">
+          <svg class="icon field-icon"><use href="#i-servers"/></svg>
+          <input id="origin" name="origin" type="text" dir="ltr" placeholder="93.184.215.14" spellcheck="false" autocapitalize="off" maxlength="64" inputmode="decimal">
+        </div>
+        <p class="warn-note" data-i18n="originWarn">Only enter the IP of an origin server you own or are allowed to test.</p>
+      </details>
       <p class="hint"><span data-i18n="try">Try:</span>
         <button type="button" class="chip" data-example="example.com">example.com</button>
         <button type="button" class="chip" data-example="expired.badssl.com">expired.badssl.com</button>

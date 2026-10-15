@@ -41,7 +41,7 @@ var LayerTitles = map[string]string{
 	LayerNameservers:  "Name servers",
 	LayerZone:         "DNS zone",
 	LayerReach:        "Reachability",
-	LayerWeb:          "Web server",
+	LayerWeb:          "Website load",
 }
 
 var LayerOrder = []string{LayerRegistration, LayerNameservers, LayerZone, LayerReach, LayerWeb}
@@ -183,6 +183,10 @@ type State struct {
 	ApexV4, ApexV6 []netip.Addr
 	WWWV4, WWWV6   []netip.Addr
 	WWWExists      bool
+	CNAMEs         []string // CNAME targets of apex/www/sub (for CDN fingerprinting)
+
+	// Website-load options (from /api/web-diagnose).
+	OriginIP netip.Addr // optional user-supplied origin address (already validated public)
 }
 
 // Addrs returns the apex addresses (v4 then v6), falling back to www.

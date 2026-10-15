@@ -1,0 +1,37 @@
+# Deliberately broken websites for the Website Load demo.
+#
+#   1. DEMO_CERTS=1 go test ./internal/e2e -run TestDemoCerts      # writes deploy/demo/certs/
+#   2. docker compose -f deploy/demo/docker-compose.demo.yml up -d
+#   3. DEMO_DOCKER=1 go test ./internal/e2e -run TestLoadDemo -v   # runs Domain Doctor against them
+#
+# Everything listens on 127.0.0.1 only. One edge nginx routes by host name
+# (*.ddemo-site.com) to Apache, an nginx origin, or a Caddy "fake CDN" that
+# imitates Cloudflare error pages. The e2e harness resolves the names with
+# mock DNS and connects through test-only loopback hooks.
+services:
+  edge:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./edge.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/certs:ro
+    ports:
+      - "127.0.0.1:18080:80"
+      - "127.0.0.1:18443:443"
+    depends_on: [apache, origin, cdn]
+
+  apache:
+    image: httpd:2.4-alpine
+    volumes:
+      - ./apache/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro
+      - ./apache/sites:/usr/local/apache2/sites:ro
+
+  origin:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./origin/origin.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./origin/html:/usr/share/nginx/demo:ro
+
+  cdn:
+    image: caddy:2-alpine
+    volumes:
+      - ./cdn/Caddyfile:/etc/caddy/Caddyfile:ro

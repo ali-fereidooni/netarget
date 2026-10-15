@@ -33,6 +33,9 @@ func (f *fakeProber) HTTP(context.Context, probe.HTTPRequest) (*probe.HTTPRespon
 	return nil, nil
 }
 func (f *fakeProber) Traceroute(context.Context, netip.Addr, int, func(string)) error { return nil }
+func (f *fakeProber) Resources(context.Context, probe.ResourceRequest) (*probe.ResourceResponse, error) {
+	return nil, nil
+}
 
 func TestLiveness(t *testing.T) {
 	a, b := &fakeProber{}, &fakeProber{}

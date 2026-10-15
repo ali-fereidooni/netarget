@@ -46,12 +46,12 @@ copied from it (it is AGPL-3.0); everything here is an independent implementatio
    sent (pinned) to every live agent: ICMP ping (`-c 4`, parsed) and TCP connect to 80/443
    (open = handshake, closed = RST, filtered = timeout). ICMP failing while TCP answers is OK with
    a note. Partial reachability across nodes and IPv6-only failures are flagged.
-5. **Web** (`checks/web.go`, `probe/http.go`): from every agent, `http://` and `https://` for the
-   host and `www`. Redirects are never followed automatically: each hop is requested explicitly,
-   re-resolved and re-validated. Per hop: status, headers, timing (DNS, connect, TLS, TTFB, total
-   via `httptrace`), TLS details (the client sets `InsecureSkipVerify` *only* so it can describe a
-   bad certificate; verification is redone with `x509.Verify` and every failure is reported),
-   CDN error-page detection (Cloudflare 52x, CloudFront, Akamai, Fastly).
+5. **Website load** (`checks/web.go`, `checks/load_matrix.go`, `probe/http.go`,
+   `probe/resources.go`, `fingerprint`, `kb`): finds *where* a site fails — CDN/WAF, origin web
+   server, application, TLS, network or page content — see [Website load](#website-load) below.
+   Redirects are never followed automatically: each hop is requested explicitly, re-resolved and
+   re-validated. TLS details are gathered with `InsecureSkipVerify` *only* so a bad certificate
+   can be described; verification is redone with `x509.Verify` and every failure is reported.
 
 ### DNS-over-HTTPS resolver mode
 
@@ -72,6 +72,55 @@ DoH resolver answers, `dnsx.Client.DoH` is set:
   zone's data; TTLs are cache-remaining. DNSSEC validation (DS → DNSKEY → RRSIG) is unchanged.
   The propagation comparison uses the first resolver as the reference.
 
+## Website load
+
+Facts are computed in Go; **all advice comes from data files** (`rules/`, embedded with
+`go:embed`). Pipeline: request matrix → fingerprints → derived signals → resources → knowledge
+base → verdict.
+
+1. **Request matrix** (`checks/load_matrix.go`): every live agent runs ~13 requests as
+   `probe.ReqSpec`s in one `/v1/http` call — GET over http/https for apex and www (browser UA),
+   then on the canonical URL: HEAD, curl and Googlebot User-Agents, forced HTTP/1.1 and HTTP/2,
+   gzip vs identity, and (with `originIp`) https/http pinned to the origin. The agent keeps a
+   ≤ 64 KB body sample, capped headers (≤ 60, ≤ 8 KB, Set-Cookie values dropped) and cookie names
+   for the final hop, only while the chain stays on the checked site.
+2. **Fingerprints** (`internal/fingerprint`, `rules/fingerprints.yaml`): CDN/WAF, origin server
+   and platform from headers, cookies, error bodies, TLS issuer, CNAME suffixes (captured by the
+   zone layer) and CIDR lists. Signal weights strong 0.7 / medium 0.4 / weak 0.15 combine as
+   `1 − Π(1 − w)`; a detection made only of weak signals is capped at 0.45 ("low") so one weak
+   hint never reads as certain. Every detection carries its evidence.
+3. **Signals** (`deriveSignals`): cross-request facts with evidence — `ua_dependent_block`,
+   `browser_ua_blocked`, `head_differs`, `h1_fail`/`h2_fail`, `redirect_loop`,
+   `https_fail_http_ok`, `apex_fail`/`www_fail`/`apex_www_split`, `origin_ok_cdn_fail` /
+   `origin_fail_too` / `origin_https_fail` (HTTPS compared with HTTPS), `regional`, page
+   classifiers (default, parked, maintenance, directory listing, PHP error, Apache 500 page),
+   TLS facts, cache status, slow TTFB, large page.
+4. **Resources** (`/v1/resources`, primary node only): the canonical HTML is parsed with
+   `x/net/html`; ≤ 30 stylesheets/scripts/images/icons/preloads and fonts from the first CSS are
+   checked for failure, slowness, mixed content, wrong or `nosniff`-blocked MIME types,
+   compression, cache lifetime and CORS. Third-party assets get a HEAD without query string.
+5. **Knowledge base** (`internal/kb`, `rules/kb/*.yaml`): each rule has `match` (`all`/`any`/
+   `none` conditions on status, error kind, CDN, server, platform, header, body regex, signal),
+   `confidence` (base + boosts with reasons), a templated verdict, ranked causes, fixes with
+   per-server snippets and verify steps, `cannot_determine`, warnings and fixtures. The loader
+   decodes strictly (`KnownFields`), validates enums/regexes/templates, and lints advice:
+   `chmod 777` is rejected outright and disabling a security feature is only allowed in a later
+   fix that carries a warning. `go test ./internal/kb` runs every rule's fixtures. Matches sort
+   by severity, confidence and priority; only the best match per `group` is kept.
+6. **Verdict**: the top match gives the layer at fault, confidence, evidence, fixes and
+   "could not determine" items; all matches become findings `load.<rule id>`. If an earlier
+   layer holds the root cause, the orchestrator sets `verdict.symptom_of` and the diagnosis
+   engine treats web findings as symptoms.
+
+Safety: GET and HEAD only, a fixed set of User-Agents (only for diagnosing blocks), no logins,
+forms, fuzzing or WAF/CDN bypass. `originIp` must pass the same `safenet` checks as any resolved
+address, on the master (`input.ParseOriginIP`) and again on the agent; it pins only the first
+host. Body samples are stripped from reports.
+
+The Docker demo (`deploy/demo/`, driven by `DEMO_DOCKER=1 go test ./internal/e2e -run
+TestLoadDemo`) runs nginx, Apache and a Caddy "CDN" behind one edge and checks ten scenarios;
+its reports are in `docs/demo/load/`.
+
 ## Diagnosis engine
 
 `internal/diagnose` separates **causes** from **symptoms**:
@@ -82,7 +131,8 @@ DoH resolver answers, `dnsx.Client.DoH` is set:
   cause. Some same-layer pairs are also symptom/cause (`sameLayerSymptoms`, e.g. per-server
   `ns.lame` is explained by `ns.none_usable`; resolver SERVFAIL by `dnssec.broken`).
 - Fixes: P1 root cause, P2 independent critical causes, P3 warnings — with plain-language actions
-  from `diagnose/rules.go` (kept in sync with the `dns-diagnostics` skill).
+  from `diagnose/rules.go` (kept in sync with the `dns-diagnostics` skill); `load.*` codes take
+  their title and first fix from the knowledge base.
 
 ## Master ↔ agent
 
@@ -104,7 +154,7 @@ DoH resolver answers, `dnsx.Client.DoH` is set:
 
 - `IsBlocked`: loopback, RFC 1918/4193, link-local (incl. 169.254.169.254 and fd00:ec2::254),
   CGNAT, multicast, unspecified, reserved/documentation ranges, and v4 addresses embedded in
-  v4-mapped, NAT64 and 6to4 forms.
+  v4-mapped, NAT64, 6to4 and SIIT forms; Teredo (2001::/32) is blocked as a whole.
 - `Resolve`: resolves **once**; if *any* answer is blocked the target is rejected.
 - `PinnedDialContext`: connects only to the pinned IPs, ignoring the host in the dial address —
   there is no second lookup to rebind. A `net.Dialer.Control` hook re-checks the actual socket
@@ -118,6 +168,9 @@ DoH resolver answers, `dnsx.Client.DoH` is set:
   followed. `exec` uses argument slices with an `netip`-formatted IP literal — no shell, no
   user text.
 - Traceroute targets must be IPs already found by a finished check (no free-form targets).
+- Website load: URLs with credentials are never followed; a redirect to another site gets the
+  default User-Agent and none of its body or headers are kept (the matrix is not an open proxy);
+  per-call limits on specs, time, samples and resources are enforced by the agent.
 
 ## Abuse controls
 

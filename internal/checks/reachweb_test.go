@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/netip"
 	"testing"
-	"time"
 
 	"domaindoctor/internal/nodes"
 	"domaindoctor/internal/probe"
@@ -15,6 +14,7 @@ import (
 type cannedProber struct {
 	probe *probe.ProbeResponse
 	http  *probe.HTTPResponse
+	res   *probe.ResourceResponse
 	err   error
 }
 
@@ -26,6 +26,12 @@ func (c *cannedProber) HTTP(_ context.Context, req probe.HTTPRequest) (*probe.HT
 	return c.http, c.err
 }
 func (c *cannedProber) Traceroute(context.Context, netip.Addr, int, func(string)) error { return c.err }
+func (c *cannedProber) Resources(context.Context, probe.ResourceRequest) (*probe.ResourceResponse, error) {
+	if c.res == nil {
+		return &probe.ResourceResponse{}, c.err
+	}
+	return c.res, c.err
+}
 
 func node(id string, p probe.Prober) *nodes.Node {
 	return &nodes.Node{ID: id, Name: id, Location: id, P: p}
@@ -83,94 +89,4 @@ func TestReach(t *testing.T) {
 	if r := Reach(context.Background(), &State{Domain: "x.com"}, nil); r.Status != SKIPPED {
 		t.Error("no targets should skip")
 	}
-}
-
-func goodTLS(now time.Time) *probe.TLSInfo {
-	return &probe.TLSInfo{Version: "TLS 1.3", Subject: "example.com", Issuer: "R3", NotBefore: now.Add(-24 * time.Hour),
-		NotAfter: now.Add(60 * 24 * time.Hour), DaysLeft: 60, SANs: []string{"example.com", "www.example.com"}, HostnameMatch: true, ChainValid: true}
-}
-
-func hop(url string, status int, loc string, tls *probe.TLSInfo, hdr map[string]string) probe.Hop {
-	return probe.Hop{URL: url, Status: status, StatusText: "x", Location: loc, TLS: tls, Headers: hdr, Timing: probe.Timing{TotalMS: 50}}
-}
-
-var secureHdr = map[string]string{"Strict-Transport-Security": "max-age=1", "Content-Security-Policy": "default-src 'self'; frame-ancestors 'none'",
-	"X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer"}
-
-func webState() *State {
-	return &State{Domain: "example.com", Apex: "example.com", ApexV4: []netip.Addr{netip.MustParseAddr("5.0.0.1")},
-		WWWV4: []netip.Addr{netip.MustParseAddr("5.0.0.1")}, WWWExists: true}
-}
-
-func healthyChains(now time.Time) []probe.Chain {
-	return []probe.Chain{
-		{Start: "http://example.com/", Hops: []probe.Hop{hop("http://example.com/", 301, "https://example.com/", nil, nil), hop("https://example.com/", 200, "", goodTLS(now), secureHdr)}},
-		{Start: "https://example.com/", Hops: []probe.Hop{hop("https://example.com/", 200, "", goodTLS(now), secureHdr)}},
-		{Start: "http://www.example.com/", Hops: []probe.Hop{hop("http://www.example.com/", 301, "https://example.com/", nil, nil), hop("https://example.com/", 200, "", goodTLS(now), secureHdr)}},
-		{Start: "https://www.example.com/", Hops: []probe.Hop{hop("https://www.example.com/", 301, "https://example.com/", goodTLS(now), nil), hop("https://example.com/", 200, "", goodTLS(now), secureHdr)}},
-	}
-}
-
-func TestWebHealthy(t *testing.T) {
-	now := testNow
-	r := Web(context.Background(), webState(), []*nodes.Node{node("a", &cannedProber{http: &probe.HTTPResponse{Chains: healthyChains(now)}})}, now)
-	if r.Status != OK {
-		t.Fatalf("status %s [%s] %+v", r.Status, codes(r), r.Findings)
-	}
-}
-
-func TestWebProblems(t *testing.T) {
-	now := testNow
-	expired := goodTLS(now)
-	expired.NotAfter, expired.DaysLeft, expired.ChainValid, expired.ChainError = now.Add(-48*time.Hour), -2, false, "certificate expired or not yet valid"
-	mismatch := goodTLS(now)
-	mismatch.HostnameMatch = false
-
-	chains := []probe.Chain{
-		// http stays on http
-		{Start: "http://example.com/", Hops: []probe.Hop{hop("http://example.com/", 200, "", nil, nil)}},
-		// https works but cert expired, no HSTS
-		{Start: "https://example.com/", Hops: []probe.Hop{hop("https://example.com/", 200, "", expired, map[string]string{})}},
-		// www loops
-		{Start: "http://www.example.com/", Loop: true, Hops: []probe.Hop{hop("http://www.example.com/", 302, "http://www.example.com/a", nil, nil), hop("http://www.example.com/a", 302, "http://www.example.com/", nil, nil)}},
-		// www https: hostname mismatch, 502
-		{Start: "https://www.example.com/", Hops: []probe.Hop{hop("https://www.example.com/", 502, "", mismatch, nil)}},
-	}
-	r := Web(context.Background(), webState(), []*nodes.Node{node("a", &cannedProber{http: &probe.HTTPResponse{Chains: chains}})}, now)
-	wantCodes(t, r, "web.no_https_redirect", "tls.expired", "web.no_hsts", "web.redirect_loop", "tls.hostname_mismatch", "web.5xx", "web.apex_www_inconsistent")
-}
-
-func TestWebDownAndCDN(t *testing.T) {
-	now := testNow
-	refused := func(u string) probe.Chain {
-		return probe.Chain{Start: u, Hops: []probe.Hop{{URL: u, ErrorKind: "refused", Error: "connection refused"}}}
-	}
-	cdn := probe.Hop{URL: "https://example.com/", Status: 522, CDN: "Cloudflare", CDNError: true}
-	st := webState()
-	st.WWWV4, st.WWWExists = nil, false
-	r := Web(context.Background(), st, []*nodes.Node{node("a", &cannedProber{http: &probe.HTTPResponse{Chains: []probe.Chain{
-		refused("http://example.com/"), {Start: "https://example.com/", Hops: []probe.Hop{cdn}},
-	}}})}, now)
-	wantCodes(t, r, "web.refused", "web.cdn_error")
-	if r.Status != FAIL {
-		t.Fatalf("status %s", r.Status)
-	}
-	for _, f := range r.Findings {
-		if f.Code == "web.cdn_error" && f.Severity != Critical {
-			t.Fatal("cdn error on the only working URL should be critical")
-		}
-	}
-}
-
-func TestWebPartialAcrossNodes(t *testing.T) {
-	now := testNow
-	bad := []probe.Chain{}
-	for _, c := range healthyChains(now) {
-		bad = append(bad, probe.Chain{Start: c.Start, Hops: []probe.Hop{{URL: c.Start, ErrorKind: "timeout"}}})
-	}
-	r := Web(context.Background(), webState(), []*nodes.Node{
-		node("a", &cannedProber{http: &probe.HTTPResponse{Chains: healthyChains(now)}}),
-		node("b", &cannedProber{http: &probe.HTTPResponse{Chains: bad}}),
-	}, now)
-	wantCodes(t, r, "web.partial")
 }

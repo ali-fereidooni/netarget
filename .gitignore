@@ -5,3 +5,5 @@ ref/
 .env
 .claude/settings.local.json
 .taste-skill/
+
+/deploy/demo/certs/

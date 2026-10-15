@@ -1,21 +1,21 @@
 # Domain Doctor report: broken-web.com
 
-- Checked: 2026-10-14 20:46:38 UTC
-- Request ID: `9a4cfce89e89e9890a19cdbcd7b483e662ae1d58`
+- Checked: 2026-10-15 01:28:06 UTC
+- Request ID: `5cda6b21c8a9db698932ece3dbeef0104829246f`
 - Measurement nodes: Frankfurt (DE (demo)), Tehran (IR (demo))
 
 ## Diagnosis
 
-**The TLS certificate has expired**
+**Expired TLS certificate**
 
-- Root cause (web): The TLS certificate for broken-web.com expired on 2026-10-11; browsers show a security error.
-- Evidence: `subject=broken-web.com issuer=Domain Doctor Demo CA valid 2026-06-16 → 2026-10-11 SAN=[broken-web.com]`
-- Also a cause (web): http://broken-web.com/ returns HTTP 502 Bad Gateway: the reverse proxy/load balancer could not get a valid response from the application server (backend down or crashing).
+- Root cause (web): The TLS certificate for broken-web.com has expired; browsers show a security warning instead of the site
+- Evidence: `certificate expired 2026-10-12 (issuer Domain Doctor Demo CA)`
+- Also a cause (web): nginx cannot get a response from the application behind it (502 Bad Gateway)
 
 ### Fixes (in priority order)
 
-1. **The TLS certificate has expired** — Renew the certificate now (e.g. certbot renew) and fix automatic renewal; reload the web server afterwards.
-2. **The website returns a server error** — Check the application and reverse-proxy logs; restart the backend; for 502/504 verify the upstream address and timeouts.
+1. **Expired TLS certificate** — Renew the certificate and reload the web server. (see the Website load section for all steps and server-specific snippets)
+2. **502 Bad Gateway from the origin's reverse proxy** — Check that the upstream service is running and listening where the proxy expects it. (see the Website load section for all steps and server-specific snippets)
 
 ## Checks
 
@@ -25,11 +25,11 @@
 | Name servers | ✅ OK | 2 name server(s) delegated by com, 2 of 2 addresses answer authoritatively |
 | DNS zone | ✅ OK | 5 records from ns1.dns-host.net. (3.0.1.1) |
 | Reachability | ✅ OK | Reachable from 2 of 2 node(s) |
-| Web server | ❌ FAIL | https://broken-web.com/ → 502 Bad Gateway |
+| Website load | ❌ FAIL | https://broken-web.com/ → 502 in 12 ms — The TLS certificate for broken-web.com has expired; browsers show a security warning instead of the site |
 
 ### ✅ Domain registration — OK
 
-- **INFO** `reg.ok` Registered until 2027-01-17 (94 days left).
+- **INFO** `reg.ok` Registered until 2027-01-18 (94 days left).
 
 ### ✅ Name servers — OK
 
@@ -62,23 +62,76 @@
 | Frankfurt | 127.0.0.1 | 4 | 4 | 0% | 0.0/0.1/0.1 | open | open | ok |
 | Tehran | 127.0.0.1 | 4 | 4 | 0% | 0.0/0.1/0.1 | open | open | ok |
 
-### ❌ Web server — FAIL
+### ❌ Website load — FAIL
 
-- **FAIL** `web.5xx` http://broken-web.com/ returns HTTP 502 Bad Gateway: the reverse proxy/load balancer could not get a valid response from the application server (backend down or crashing). (`https://broken-web.com/ (from http://broken-web.com/)`)
-- **FAIL** `tls.expired` The TLS certificate for broken-web.com expired on 2026-10-11; browsers show a security error. (`subject=broken-web.com issuer=Domain Doctor Demo CA valid 2026-06-16 → 2026-10-11 SAN=[broken-web.com]`)
+- **FAIL** `load.tls.expired` The TLS certificate for broken-web.com has expired; browsers show a security warning instead of the site (`certificate expired 2026-10-12 (issuer Domain Doctor Demo CA)`)
+- **FAIL** `load.http.502.origin` nginx cannot get a response from the application behind it (502 Bad Gateway) (`HTTP 502 on GET https://broken-web.com/ (browser UA); no CDN or WAF detected in front of the site; web server detected: nginx (nginx in front of an application (PHP-FPM, Node, Gunicorn…))`)
+- **INFO** `load.content.no-http2` The server only speaks HTTP/1.1; HTTP/2 would load pages with many resources faster (`the server negotiated HTTP/1.1 when HTTP/2 was offered`)
 
-`http://broken-web.com/`
+**Verdict:** The TLS certificate for broken-web.com has expired; browsers show a security warning instead of the site
 
-- http://broken-web.com/ → 301 Moved Permanently (1 ms) Location: https://broken-web.com/
-- https://broken-web.com/ → 502 Bad Gateway (3 ms)
+- Layer at fault: **tls** (confidence high, 95%)
 
-`https://broken-web.com/`
+Evidence:
 
-- https://broken-web.com/ → 502 Bad Gateway (4 ms)
+- `certificate expired 2026-10-12 (issuer Domain Doctor Demo CA)`
 
-| Node | URL | Final | Status | Total ms |
-|---|---|---|---|---|
-| Frankfurt | http://broken-web.com/ | https://broken-web.com/ | 502 | 4 |
-| Frankfurt | https://broken-web.com/ | https://broken-web.com/ | 502 | 4 |
-| Tehran | http://broken-web.com/ | https://broken-web.com/ | 502 | 4 |
-| Tehran | https://broken-web.com/ | https://broken-web.com/ | 502 | 4 |
+Likely causes:
+
+- (high) Automatic renewal (certbot/ACME) stopped working: a failed validation, a removed cron/timer, or a firewall blocking port 80.
+- (medium) The certificate was renewed on disk but the web server was not reloaded.
+
+Fix steps:
+
+1. Renew the certificate and reload the web server.
+
+   nginx:
+
+   ```
+   sudo certbot renew && sudo systemctl reload nginx
+   ```
+
+   - Verify: echo | openssl s_client -connect broken-web.com:443 -servername broken-web.com 2>/dev/null | openssl x509 -noout -enddate
+2. Fix automatic renewal so it does not happen again.
+
+   any:
+
+   ```
+   sudo certbot renew --dry-run
+   systemctl list-timers | grep certbot
+   ```
+
+   - Verify: The dry run succeeds.
+
+Could not determine from outside:
+
+- Why the renewal job failed (see the ACME client's log).
+
+| Kind | Detected | Confidence | Evidence |
+|---|---|---|---|
+| server | nginx | medium | header server: nginx/1.24.0 (GET https://broken-web.com/) |
+
+| Node | Request | Final | Result | Proto | TTFB ms | Total ms | Differs |
+|---|---|---|---|---|---|---|---|
+| Frankfurt | GET https://broken-web.com/ | https://broken-web.com/ | 502 | HTTP/1.1 | 12 | 12 |  |
+| Frankfurt | GET http://broken-web.com/ | https://broken-web.com/ | 502 | HTTP/1.1 | 3 | 3 |  |
+| Frankfurt | HEAD https://broken-web.com/ | https://broken-web.com/ | 502 | HTTP/1.1 | 7 | 8 |  |
+| Frankfurt | GET https://broken-web.com/ curl UA | https://broken-web.com/ | 502 | HTTP/1.1 | 5 | 5 |  |
+| Frankfurt | GET https://broken-web.com/ googlebot UA | https://broken-web.com/ | 502 | HTTP/1.1 | 8 | 9 |  |
+| Frankfurt | GET https://broken-web.com/ HTTP/1.1 | https://broken-web.com/ | 502 | HTTP/1.1 | 7 | 7 |  |
+| Frankfurt | GET https://broken-web.com/ HTTP/2 | https://broken-web.com/ | 502 | HTTP/1.1 | 7 | 8 |  |
+| Frankfurt | GET https://broken-web.com/ gzip | https://broken-web.com/ | 502 | HTTP/1.1 | 5 | 5 |  |
+| Frankfurt | GET https://broken-web.com/ no compression | https://broken-web.com/ | 502 | HTTP/1.1 | 9 | 9 |  |
+| Tehran | GET https://broken-web.com/ | https://broken-web.com/ | 502 | HTTP/1.1 | 5 | 5 |  |
+| Tehran | GET http://broken-web.com/ | https://broken-web.com/ | 502 | HTTP/1.1 | 5 | 5 |  |
+| Tehran | HEAD https://broken-web.com/ | https://broken-web.com/ | 502 | HTTP/1.1 | 6 | 6 |  |
+| Tehran | GET https://broken-web.com/ curl UA | https://broken-web.com/ | 502 | HTTP/1.1 | 6 | 6 |  |
+| Tehran | GET https://broken-web.com/ googlebot UA | https://broken-web.com/ | 502 | HTTP/1.1 | 6 | 7 |  |
+| Tehran | GET https://broken-web.com/ HTTP/1.1 | https://broken-web.com/ | 502 | HTTP/1.1 | 7 | 7 |  |
+| Tehran | GET https://broken-web.com/ HTTP/2 | https://broken-web.com/ | 502 | HTTP/1.1 | 7 | 7 |  |
+| Tehran | GET https://broken-web.com/ gzip | https://broken-web.com/ | 502 | HTTP/1.1 | 7 | 7 |  |
+| Tehran | GET https://broken-web.com/ no compression | https://broken-web.com/ | 502 | HTTP/1.1 | 9 | 9 |  |
+
+- Also: **502 Bad Gateway from the origin's reverse proxy** — nginx cannot get a response from the application behind it (502 Bad Gateway) (fail, high)
+
+- Also: **HTTP/2 not available** — The server only speaks HTTP/1.1; HTTP/2 would load pages with many resources faster (info, high)

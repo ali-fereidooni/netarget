@@ -1,36 +1,35 @@
 # Domain Doctor report: expired.badssl.com
 
-- Checked: 2026-10-14 21:03:07 UTC
-- Request ID: `e34ebb17d8e3725c6b85ccc03eb14bf8e4034adb`
+- Checked: 2026-10-15 01:32:06 UTC
+- Request ID: `2125b3671f24d896cd12e778cf905c58393d51da`
 - Measurement nodes: Master node (local)
 
 ## Diagnosis
 
-**The TLS certificate has expired**
+**Expired TLS certificate**
 
-- Root cause (web): The TLS certificate for expired.badssl.com expired on 2015-04-12; browsers show a security error.
-- Evidence: `subject=*.badssl.com issuer=COMODO RSA Domain Validation Secure Server CA valid 2015-04-09 → 2015-04-12 SAN=[*.badssl.com, badssl.com]`
+- Root cause (web): The TLS certificate for expired.badssl.com has expired; browsers show a security warning instead of the site
+- Evidence: `certificate expired 2015-04-12 (issuer COMODO RSA Domain Validation Secure Server CA)`
 
 ### Fixes (in priority order)
 
-1. **The TLS certificate has expired** — Renew the certificate now (e.g. certbot renew) and fix automatic renewal; reload the web server afterwards.
+1. **Expired TLS certificate** — Renew the certificate and reload the web server. (see the Website load section for all steps and server-specific snippets)
 2. **No SPF record** — Publish one TXT record like: v=spf1 include:<your mail provider> -all
 3. **No DMARC record** — Publish TXT at _dmarc: v=DMARC1; p=quarantine; rua=mailto:dmarc@yourdomain (start with p=none to monitor).
-4. **HSTS is not enabled** — Add the header Strict-Transport-Security: max-age=31536000; includeSubDomains once HTTPS works everywhere.
 
 ## Checks
 
 | Step | Status | Summary |
 |---|---|---|
-| Domain registration | ✅ OK | Registered with MarkMonitor Inc., 175 days left |
+| Domain registration | ✅ OK | Registered with MarkMonitor Inc., 174 days left |
 | Name servers | ✅ OK | 4 name server(s) seen via public resolvers (direct checks unavailable) |
 | DNS zone | ⚠️ WARN | 14 records from public resolvers over HTTPS (TTLs are cache-remaining; direct queries unavailable) |
 | Reachability | ✅ OK | Reachable from 1 of 1 node(s) |
-| Web server | ❌ FAIL | https://expired.badssl.com/ → 200 OK in 990 ms (from Master node) — but browsers reject the TLS certificate |
+| Website load | ❌ FAIL | https://expired.badssl.com/ → 200 in 1020 ms — The TLS certificate for expired.badssl.com has expired; browsers show a security warning instead of the site |
 
 ### ✅ Domain registration — OK
 
-- **INFO** `reg.ok` Registered until 2027-04-07 (175 days left).
+- **INFO** `reg.ok` Registered until 2027-04-07 (174 days left).
 
 ### ✅ Name servers — OK
 
@@ -58,11 +57,11 @@
 | Name | Type | TTL | Value |
 |---|---|---|---|
 | badssl.com | A | 300 | 104.154.89.105 |
-| badssl.com | MX | 3600 | 40 alt4.gmr-smtp-in.l.google.com. |
-| badssl.com | MX | 3600 | 5 gmr-smtp-in.l.google.com. |
 | badssl.com | MX | 3600 | 20 alt2.gmr-smtp-in.l.google.com. |
 | badssl.com | MX | 3600 | 10 alt1.gmr-smtp-in.l.google.com. |
 | badssl.com | MX | 3600 | 30 alt3.gmr-smtp-in.l.google.com. |
+| badssl.com | MX | 3600 | 40 alt4.gmr-smtp-in.l.google.com. |
+| badssl.com | MX | 3600 | 5 gmr-smtp-in.l.google.com. |
 | badssl.com | NS | 21600 | ns-cloud-c2.googledomains.com. |
 | badssl.com | NS | 21600 | ns-cloud-c4.googledomains.com. |
 | badssl.com | NS | 21600 | ns-cloud-c3.googledomains.com. |
@@ -79,22 +78,84 @@
 |---|---|---|---|---|---|---|---|---|
 | Master node | 104.154.89.105 | 4 | 4 | 0% | 0.0/0.0/0.0 | open | open | ok |
 
-### ❌ Web server — FAIL
+### ❌ Website load — FAIL
 
-- **FAIL** `tls.expired` The TLS certificate for expired.badssl.com expired on 2015-04-12; browsers show a security error. (`subject=*.badssl.com issuer=COMODO RSA Domain Validation Secure Server CA valid 2015-04-09 → 2015-04-12 SAN=[*.badssl.com, badssl.com]`)
-- **WARN** `web.no_hsts` No Strict-Transport-Security (HSTS) header: browsers may still try plain HTTP first. (`https://expired.badssl.com/`)
-- **INFO** `web.missing_security_headers` Recommended security headers are missing: Content-Security-Policy, X-Content-Type-Options, Referrer-Policy, X-Frame-Options. (`https://expired.badssl.com/`)
+- **FAIL** `load.tls.expired` The TLS certificate for expired.badssl.com has expired; browsers show a security warning instead of the site (`certificate expired 2015-04-12 (issuer COMODO RSA Domain Validation Secure Server CA)`)
+- **INFO** `load.content.hsts-missing` HTTPS works but the site does not send Strict-Transport-Security, so browsers may still try plain HTTP first (`no Strict-Transport-Security header on https://expired.badssl.com/`)
+- **INFO** `load.content.no-compression` HTML, CSS or JavaScript is sent uncompressed, making pages slower than necessary (`1 text resource(s) sent uncompressed: https://expired.badssl.com/style.css`)
+- **INFO** `load.content.no-http2` The server only speaks HTTP/1.1; HTTP/2 would load pages with many resources faster (`the server negotiated HTTP/1.1 when HTTP/2 was offered`)
+- **INFO** `load.content.security-headers` Some recommended security headers are missing (see evidence) (`missing: content-security-policy, x-content-type-options, referrer-policy`)
+- **INFO** `load.content.weak-cache` Static files have no or very short cache lifetimes, so repeat visits download them again (`3 static resource(s) without useful caching: https://expired.badssl.com/style.css, https://expired.badssl.com/icons/favicon-red.ico, https://expired.badssl.com/icons/icon-red.png`)
 
-`http://expired.badssl.com/`
+**Verdict:** The TLS certificate for expired.badssl.com has expired; browsers show a security warning instead of the site
 
-- http://expired.badssl.com/ → 301 Moved Permanently (547 ms) Location: https://expired.badssl.com/
-- https://expired.badssl.com/ → 200 OK (1061 ms)
+- Layer at fault: **tls** (confidence high, 95%)
 
-`https://expired.badssl.com/`
+Evidence:
 
-- https://expired.badssl.com/ → 200 OK (990 ms)
+- `certificate expired 2015-04-12 (issuer COMODO RSA Domain Validation Secure Server CA)`
 
-| Node | URL | Final | Status | Total ms |
-|---|---|---|---|---|
-| Master node | http://expired.badssl.com/ | https://expired.badssl.com/ | 200 | 1608 |
-| Master node | https://expired.badssl.com/ | https://expired.badssl.com/ | 200 | 990 |
+Likely causes:
+
+- (high) Automatic renewal (certbot/ACME) stopped working: a failed validation, a removed cron/timer, or a firewall blocking port 80.
+- (medium) The certificate was renewed on disk but the web server was not reloaded.
+
+Fix steps:
+
+1. Renew the certificate and reload the web server.
+
+   nginx:
+
+   ```
+   sudo certbot renew && sudo systemctl reload nginx
+   ```
+
+   - Verify: echo | openssl s_client -connect expired.badssl.com:443 -servername expired.badssl.com 2>/dev/null | openssl x509 -noout -enddate
+2. Fix automatic renewal so it does not happen again.
+
+   any:
+
+   ```
+   sudo certbot renew --dry-run
+   systemctl list-timers | grep certbot
+   ```
+
+   - Verify: The dry run succeeds.
+
+Could not determine from outside:
+
+- Why the renewal job failed (see the ACME client's log).
+
+| Kind | Detected | Confidence | Evidence |
+|---|---|---|---|
+| server | nginx | medium | header server: nginx/1.10.3 (Ubuntu) (GET http://expired.badssl.com/) |
+
+| Node | Request | Final | Result | Proto | TTFB ms | Total ms | Differs |
+|---|---|---|---|---|---|---|---|
+| Master node | GET https://expired.badssl.com/ | https://expired.badssl.com/ | 200 | HTTP/1.1 | 1020 | 1020 |  |
+| Master node | GET http://expired.badssl.com/ | https://expired.badssl.com/ | 200 | HTTP/1.1 | 981 | 982 |  |
+| Master node | HEAD https://expired.badssl.com/ | https://expired.badssl.com/ | 200 | HTTP/1.1 | 1007 | 1007 |  |
+| Master node | GET https://expired.badssl.com/ curl UA | https://expired.badssl.com/ | 200 | HTTP/1.1 | 1025 | 1025 |  |
+| Master node | GET https://expired.badssl.com/ googlebot UA | https://expired.badssl.com/ | 200 | HTTP/1.1 | 980 | 981 |  |
+| Master node | GET https://expired.badssl.com/ HTTP/1.1 | https://expired.badssl.com/ | 200 | HTTP/1.1 | 1015 | 1016 |  |
+| Master node | GET https://expired.badssl.com/ HTTP/2 | https://expired.badssl.com/ | 200 | HTTP/1.1 | 988 | 988 |  |
+| Master node | GET https://expired.badssl.com/ gzip | https://expired.badssl.com/ | 200 | HTTP/1.1 | 999 | 999 |  |
+| Master node | GET https://expired.badssl.com/ no compression | https://expired.badssl.com/ | 200 | HTTP/1.1 | 1016 | 1016 |  |
+
+Resources (3 found, 3 checked):
+
+| Kind | URL | Status | ms | Size | Issues |
+|---|---|---|---|---|---|
+| stylesheet | https://expired.badssl.com/style.css | 200 | 1013 | 1506 | uncompressed, weak_cache |
+| icon | https://expired.badssl.com/icons/favicon-red.ico | 200 | 1000 | 5430 | weak_cache |
+| icon | https://expired.badssl.com/icons/icon-red.png | 200 | 1011 | 3858 | weak_cache |
+
+- Also: **HSTS not enabled** — HTTPS works but the site does not send Strict-Transport-Security, so browsers may still try plain HTTP first (info, high)
+
+- Also: **Text responses are not compressed** — HTML, CSS or JavaScript is sent uncompressed, making pages slower than necessary (info, high)
+
+- Also: **HTTP/2 not available** — The server only speaks HTTP/1.1; HTTP/2 would load pages with many resources faster (info, high)
+
+- Also: **Recommended security headers missing** — Some recommended security headers are missing (see evidence) (info, high)
+
+- Also: **Static assets are not cacheable** — Static files have no or very short cache lifetimes, so repeat visits download them again (info, medium)

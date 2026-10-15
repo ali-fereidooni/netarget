@@ -1,0 +1,2 @@
+# Deliberate error: a directive from a module that is not loaded -> 500.
+RewriteEngin On

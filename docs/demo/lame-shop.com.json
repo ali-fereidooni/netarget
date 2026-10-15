@@ -1,5 +1,5 @@
 {
-  "request_id": "6c39dd3cc553ca66f86c88382628596d7ed025ec",
+  "request_id": "4d61783049504a1381667064f871ffb34e709470",
   "domain": {
     "input": "lame-shop.com",
     "name": "lame-shop.com",
@@ -7,8 +7,8 @@
     "apex": "lame-shop.com"
   },
   "status": "done",
-  "started_at": "2026-10-14T20:46:38.38308Z",
-  "finished_at": "2026-10-14T20:46:38.7861708Z",
+  "started_at": "2026-10-15T01:28:05.9585155Z",
+  "finished_at": "2026-10-15T01:28:06.3610096Z",
   "nodes": [
     {
       "id": "fra1",
@@ -31,7 +31,7 @@
         {
           "code": "reg.ok",
           "severity": "info",
-          "message": "Registered until 2027-08-15 (304 days left)."
+          "message": "Registered until 2027-08-16 (304 days left)."
         }
       ],
       "details": {
@@ -39,18 +39,18 @@
         "registered": true,
         "info": {
           "source": "rdap",
-          "server": "127.0.0.1:60158",
+          "server": "127.0.0.1:64176",
           "registrar": "Demo Registrar Ltd.",
-          "created": "2026-08-15T20:46:38Z",
-          "expires": "2027-08-15T20:46:38Z",
+          "created": "2026-08-16T01:28:05Z",
+          "expires": "2027-08-16T01:28:05Z",
           "status": [
             "active"
           ]
         },
         "days_left": 304
       },
-      "started_at": "2026-10-14T20:46:38.38308Z",
-      "duration_ms": 1
+      "started_at": "2026-10-15T01:28:05.9585155Z",
+      "duration_ms": 0
     },
     {
       "layer": "nameservers",
@@ -111,8 +111,7 @@
                 "ip": "5.0.0.1",
                 "status": "lame",
                 "rcode": "REFUSED",
-                "aa": false,
-                "rtt_ms": 1
+                "aa": false
               }
             ]
           },
@@ -136,7 +135,7 @@
           }
         ]
       },
-      "started_at": "2026-10-14T20:46:38.3850491Z",
+      "started_at": "2026-10-15T01:28:05.9590541Z",
       "duration_ms": 401
     },
     {
@@ -145,7 +144,7 @@
       "status": "SKIPPED",
       "summary": "Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)",
       "findings": [],
-      "started_at": "2026-10-14T20:46:38.7861708Z",
+      "started_at": "2026-10-15T01:28:06.3610096Z",
       "duration_ms": 0,
       "skip_reason": "Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)"
     },
@@ -155,17 +154,17 @@
       "status": "SKIPPED",
       "summary": "Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)",
       "findings": [],
-      "started_at": "2026-10-14T20:46:38.7861708Z",
+      "started_at": "2026-10-15T01:28:06.3610096Z",
       "duration_ms": 0,
       "skip_reason": "Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)"
     },
     {
       "layer": "web",
-      "title": "Web server",
+      "title": "Website load",
       "status": "SKIPPED",
       "summary": "Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)",
       "findings": [],
-      "started_at": "2026-10-14T20:46:38.7861708Z",
+      "started_at": "2026-10-15T01:28:06.3610096Z",
       "duration_ms": 0,
       "skip_reason": "Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)"
     }
@@ -208,7 +207,7 @@
       {
         "code": "skipped",
         "layer": "web",
-        "message": "Web server was not checked: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)",
+        "message": "Website load was not checked: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)",
         "explained_by": "ns.none_usable"
       }
     ],

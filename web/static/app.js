@@ -13,13 +13,13 @@ const STRINGS = {
     inputLabel: "Domain or URL", check: "Check", checking: "Checking…", try: "Try:",
     copyLink: "Copy link", copied: "Copied", permaLink: "Permanent link",
     introH: "What gets checked",
-    layer: { registration: "Registration", nameservers: "Name servers", zone: "DNS zone", reachability: "Reachability", web: "Web server" },
+    layer: { registration: "Registration", nameservers: "Name servers", zone: "DNS zone", reachability: "Reachability", web: "Website load" },
     layerHelp: {
       registration: "Registered? Expiry, holds and registrar status (RDAP, WHOIS).",
       nameservers: "The delegation at the TLD, and whether each name server answers.",
       zone: "Records, mail authentication (SPF, DMARC, DKIM) and DNSSEC.",
       reachability: "Ping and TCP 80/443 from every measurement node.",
-      web: "HTTP and HTTPS, redirects, TLS certificate and security headers.",
+      web: "What is in front of the site, a request matrix from every node, page resources, and a rule-based verdict with fixes.",
     },
     state: { PENDING: "Waiting", RUNNING: "Checking", OK: "OK", WARN: "Warning", FAIL: "Failed", SKIPPED: "Skipped" },
     rootCause: "Root cause", evidence: "Evidence", alsoCause: "Also a cause", symptoms: "Explained by the root cause, not separate problems",
@@ -32,6 +32,21 @@ const STRINGS = {
     lost: "Connection lost, reconnecting…",
     footer: "Copy link keeps a result for 30 minutes; a permanent link keeps it for 24 hours.",
     themeDark: "Switch to light theme", themeLight: "Switch to dark theme",
+    advanced: "Advanced: test the origin server directly",
+    originLabel: "Origin server IP (optional)",
+    originWarn: "Only enter the IP of an origin server you own or are allowed to test. The check connects to it directly, with the site's host name, to tell a CDN problem from an origin problem.",
+    w: {
+      verdict: "Website load verdict", confidence: "Confidence", symptomOf: "This is a symptom of an earlier problem — fix that first:",
+      originTested: "Origin tested directly at", fingerprints: "What is in front of the site", causes: "Likely causes",
+      fixes: "Fix steps", serverType: "Server type", auto: "Auto", verify: "How to verify", cannot: "What this check cannot see from outside",
+      matrix: "Request matrix", request: "Request", differs: "differs", resources: "Page resources", time: "Time", issues: "Issues",
+      copy: "Copy", noCDN: "none detected",
+      kind: { cdn: "CDN/WAF", server: "Server", platform: "Platform" },
+      level: { high: "high", medium: "medium", low: "low" },
+      lik: { high: "likely", medium: "possible", low: "less likely" },
+      layer: { none: "No problem found", dns: "DNS", cdn: "CDN / WAF", network: "Network", tls: "TLS / certificate", server: "Web server", application: "Application", content: "Page content" },
+      issue: { failed: "failed", slow: "slow", mixed_content: "mixed content", wrong_mime: "wrong type", blocked_mime: "blocked (nosniff)", uncompressed: "uncompressed", weak_cache: "weak caching", cors: "CORS", blocked: "blocked (internal host)" },
+    },
     t: {
       field: "Field", value: "Value", source: "Source", registrar: "Registrar", created: "Created", expires: "Expires", daysLeft: "Days left",
       epp: "EPP status", regNS: "Name servers (registry)", ns: "Name server", status: "Status", aa: "AA", serial: "SOA serial", rtt: "RTT ms",
@@ -50,13 +65,13 @@ const STRINGS = {
     inputLabel: "دامنه یا آدرس", check: "بررسی", checking: "در حال بررسی…", try: "امتحان کنید:",
     copyLink: "کپی لینک", copied: "کپی شد", permaLink: "لینک دائمی",
     introH: "چه چیزهایی بررسی می‌شود",
-    layer: { registration: "ثبت دامنه", nameservers: "نیم‌سرورها", zone: "زون DNS", reachability: "دسترس‌پذیری", web: "وب‌سرور" },
+    layer: { registration: "ثبت دامنه", nameservers: "نیم‌سرورها", zone: "زون DNS", reachability: "دسترس‌پذیری", web: "بارگذاری سایت" },
     layerHelp: {
       registration: "ثبت شده است؟ تاریخ انقضا، تعلیق‌ها و وضعیت رجیسترار (RDAP و WHOIS).",
       nameservers: "تفویض در TLD و اینکه هر نیم‌سرور پاسخ می‌دهد یا نه.",
       zone: "رکوردها، احراز هویت ایمیل (SPF، DMARC، DKIM) و DNSSEC.",
       reachability: "پینگ و TCP روی پورت‌های 80 و 443 از همهٔ گره‌ها.",
-      web: "HTTP و HTTPS، ریدایرکت‌ها، گواهی TLS و هدرهای امنیتی.",
+      web: "شناسایی CDN و سرور، ماتریس درخواست از همهٔ گره‌ها، منابع صفحه و تشخیص مبتنی بر قواعد با راه‌حل.",
     },
     state: { PENDING: "در انتظار", RUNNING: "در حال بررسی", OK: "سالم", WARN: "هشدار", FAIL: "خطا", SKIPPED: "رد شد" },
     rootCause: "علت اصلی", evidence: "شواهد", alsoCause: "علت دیگر", symptoms: "این خطاها نتیجهٔ همان علت اصلی‌اند، نه مشکل جداگانه",
@@ -69,6 +84,21 @@ const STRINGS = {
     lost: "اتصال قطع شد، در حال اتصال دوباره…",
     footer: "«کپی لینک» نتیجه را ۳۰ دقیقه نگه می‌دارد؛ لینک دائمی ۲۴ ساعت.",
     themeDark: "تغییر به تم روشن", themeLight: "تغییر به تم تیره",
+    advanced: "پیشرفته: بررسی مستقیم سرور اصلی (Origin)",
+    originLabel: "IP سرور اصلی (اختیاری)",
+    originWarn: "فقط IP سروری را وارد کنید که مالک آن هستید یا اجازهٔ بررسی‌اش را دارید. این بررسی مستقیماً با نام میزبان سایت به آن وصل می‌شود تا مشکل CDN از مشکل سرور اصلی جدا شود.",
+    w: {
+      verdict: "نتیجهٔ بارگذاری سایت", confidence: "اطمینان", symptomOf: "این نتیجهٔ یک مشکل در مرحلهٔ قبل است — اول آن را رفع کنید:",
+      originTested: "سرور اصلی مستقیماً بررسی شد در", fingerprints: "چه چیزی جلوی سایت است", causes: "علت‌های محتمل",
+      fixes: "مراحل رفع مشکل", serverType: "نوع سرور", auto: "خودکار", verify: "روش بررسی", cannot: "آنچه این بررسی از بیرون نمی‌بیند",
+      matrix: "ماتریس درخواست‌ها", request: "درخواست", differs: "متفاوت", resources: "منابع صفحه", time: "زمان", issues: "مشکلات",
+      copy: "کپی", noCDN: "شناسایی نشد",
+      kind: { cdn: "CDN/WAF", server: "سرور", platform: "پلتفرم" },
+      level: { high: "بالا", medium: "متوسط", low: "پایین" },
+      lik: { high: "محتمل", medium: "ممکن", low: "کم‌احتمال" },
+      layer: { none: "مشکلی پیدا نشد", dns: "DNS", cdn: "CDN / WAF", network: "شبکه", tls: "TLS / گواهی", server: "وب‌سرور", application: "برنامه", content: "محتوای صفحه" },
+      issue: { failed: "خطا", slow: "کند", mixed_content: "محتوای مختلط", wrong_mime: "نوع نادرست", blocked_mime: "مسدود (nosniff)", uncompressed: "بدون فشرده‌سازی", weak_cache: "کش ضعیف", cors: "CORS", blocked: "مسدود (میزبان داخلی)" },
+    },
     t: {
       field: "مورد", value: "مقدار", source: "منبع", registrar: "رجیسترار", created: "تاریخ ثبت", expires: "تاریخ انقضا", daysLeft: "روزهای باقی‌مانده",
       epp: "وضعیت EPP", regNS: "نیم‌سرورها (رجیستری)", ns: "نیم‌سرور", status: "وضعیت", aa: "AA", serial: "سریال SOA", rtt: "تأخیر (ms)",
@@ -265,6 +295,7 @@ function card(layer, r) {
     r.summary && st !== "PENDING" && st !== "RUNNING" ? el("span", { class: "summary", dir: "auto", text: r.summary }) : el("span", { class: "skeleton" }));
   const box = el("article", { class: "card " + st, id: "card-" + layer },
     el("div", { class: "card-head" }, el("span", { class: "card-icon" }, icon(LAYER_ICON[layer])), title, pill));
+  if (layer === "web" && r.details && r.details.verdict) box.append(webPanel(r.details));
   if (r.findings && r.findings.length) {
     box.append(el("ul", { class: "findings" }, r.findings.map((f) => el("li", { class: f.severity },
       icon(SEV_ICON[f.severity] || "i-info"),
@@ -343,6 +374,7 @@ function detailsFor(layer, r) {
         { classes: [null, null, null, null, null, null, (v) => "s-" + v, (v) => "s-" + v, (v) => "s-" + v], ltr: [false, true, true, true, true, true, true, true, true, false] }));
       if (!current.readOnly && current.requestId && (d.targets || []).length) body.push(traceUI(d.targets));
     }
+    if (layer === "web" && (d.matrix || []).length) body.push(...webEvidenceTables(d));
     if (layer === "web" && d.chains) {
       d.chains.forEach((c) => {
         body.push(el("h4", { dir: "ltr", text: c.start + (c.loop ? "  (redirect loop)" : "") }));
@@ -371,6 +403,117 @@ function detailsFor(layer, r) {
   if (r.skip_reason) body.push(el("p", {}, T("skipped") + ": ", el("span", { dir: "auto", text: r.skip_reason })));
   body.push(el("details", { class: "more" }, el("summary", {}, icon("i-chevron"), T("raw")), el("pre", { text: JSON.stringify(r, null, 2) })));
   return el("details", { class: "more" }, el("summary", {}, icon("i-chevron"), T("details")), el("div", { class: "detail-body" }, body));
+}
+
+// ---------- website load ----------
+
+const SERVER_CHOICES = ["auto", "apache", "nginx", "litespeed", "iis"];
+const SERVER_KINDS = new Set(["apache", "nginx", "litespeed", "iis", "caddy"]);
+let serverPref = SERVER_CHOICES.includes(store.get("dd.server", "auto")) ? store.get("dd.server", "auto") : "auto";
+
+function detectedServer(d) {
+  const s = d.fingerprints && d.fingerprints.server && d.fingerprints.server[0];
+  return s && s.level !== "low" ? s.id : "";
+}
+
+// Snippets to show: the chosen (or detected) server plus non-server targets
+// such as Cloudflare, firewall or WordPress. With nothing known, show all.
+function snippetEntries(snippets, d) {
+  const all = Object.entries(snippets || {}).sort(([a], [b]) => a.localeCompare(b));
+  const srv = serverPref === "auto" ? detectedServer(d) : serverPref;
+  if (!srv) return all;
+  const picked = all.filter(([k]) => k === srv || !SERVER_KINDS.has(k));
+  return picked.length ? picked : all;
+}
+
+function fpChips(d) {
+  const fp = d.fingerprints || {};
+  const chips = [];
+  const add = (kind, det) => chips.push(el("span", { class: "fp-chip " + det.level, title: (det.evidence || []).join("\n") },
+    el("span", { class: "fp-kind", text: T("w.kind." + kind) }), det.name, el("span", { class: "fp-level", text: T("w.level." + det.level) })));
+  (fp.cdn || []).slice(0, 2).forEach((x) => add("cdn", x));
+  if (fp.no_cdn && !(fp.cdn || []).length) chips.push(el("span", { class: "fp-chip none" }, el("span", { class: "fp-kind", text: T("w.kind.cdn") }), T("w.noCDN")));
+  (fp.server || []).slice(0, 1).forEach((x) => add("server", x));
+  (fp.platform || []).slice(0, 2).forEach((x) => add("platform", x));
+  return chips;
+}
+
+function copyBtn(text) {
+  const b = el("button", { type: "button", class: "btn ghost small copy-snippet" }, icon("i-link"), T("w.copy"));
+  b.addEventListener("click", async () => { if (await copy(text)) { b.lastChild.textContent = T("copied"); setTimeout(() => (b.lastChild.textContent = T("w.copy")), 1200); } });
+  return b;
+}
+
+function webPanel(d) {
+  const v = d.verdict;
+  const cls = v.layer === "none" ? "ok" : (current.layers.web && current.layers.web.status === "WARN" ? "warn" : "fail");
+  const head = el("div", { class: "verdict-head" },
+    el("span", { class: "layer-badge " + cls }, T("w.layer." + v.layer)),
+    el("span", { class: "conf" }, T("w.confidence") + ": " + T("w.level." + v.level) + ` (${Math.round(v.confidence * 100)}%)`));
+  const panel = el("section", { class: "verdict " + cls, "aria-label": T("w.verdict") }, head,
+    el("p", { class: "verdict-text", dir: "auto", text: v.text }));
+  if (v.symptom_of) panel.append(el("p", { class: "symptom-note" }, T("w.symptomOf") + " ", el("code", { text: v.symptom_of })));
+  if (d.origin_ip) panel.append(el("p", { class: "muted small-note" }, T("w.originTested") + " ", el("code", { text: d.origin_ip })));
+  const chips = fpChips(d);
+  if (chips.length) panel.append(el("div", { class: "fp-row", "aria-label": T("w.fingerprints") }, chips));
+  if ((v.evidence || []).length) {
+    panel.append(el("h4", { text: T("evidence") }), el("ul", { class: "ev-list" }, v.evidence.map((e) => el("li", { dir: "ltr", text: e }))));
+  }
+  if ((v.causes || []).length) {
+    panel.append(el("h4", { text: T("w.causes") }), el("ul", { class: "causes" }, v.causes.map((c) =>
+      el("li", {}, el("span", { class: "lik " + c.likelihood, text: T("w.lik." + c.likelihood) }), el("span", { dir: "auto", text: c.text })))));
+  }
+  if ((v.fixes || []).length) {
+    const seg = el("div", { class: "seg server-seg", role: "group", "aria-label": T("w.serverType") }, SERVER_CHOICES.map((s) => {
+      const label = s === "auto" ? `${T("w.auto")}${detectedServer(d) ? " (" + detectedServer(d) + ")" : ""}` : { apache: "Apache", nginx: "nginx", litespeed: "LiteSpeed", iis: "IIS" }[s];
+      const b = el("button", { type: "button", "aria-pressed": String(serverPref === s), text: label });
+      b.addEventListener("click", () => { serverPref = s; store.set("dd.server", s); setCard("web", current.layers.web); });
+      return b;
+    }));
+    const steps = el("ol", { class: "fix-steps" }, v.fixes.map((f) => {
+      const li = el("li", {}, el("strong", { dir: "auto", text: f.step }));
+      if (f.why) li.append(el("p", { class: "muted", dir: "auto", text: f.why }));
+      snippetEntries(f.snippets, d).forEach(([k, s]) => li.append(el("div", { class: "snippet" },
+        el("div", { class: "snippet-head" }, el("span", { text: k }), copyBtn(s)), el("pre", { text: s }))));
+      li.append(el("p", { class: "verify" }, el("span", { class: "diag-label", text: T("w.verify") }), el("span", { dir: "auto", text: f.verify })));
+      if (f.warning) li.append(el("p", { class: "warn-note", dir: "auto", text: f.warning }));
+      return li;
+    }));
+    panel.append(el("div", { class: "fix-head" }, el("h4", { text: T("w.fixes") }), seg), steps);
+  }
+  (v.warnings || []).forEach((w) => panel.append(el("p", { class: "warn-note", dir: "auto", text: w })));
+  if ((v.cannot_determine || []).length) {
+    panel.append(el("h4", { text: T("w.cannot") }), el("ul", { class: "cannot" }, v.cannot_determine.map((x) => el("li", { dir: "auto", text: x }))));
+  }
+  return panel;
+}
+
+function webEvidenceTables(d) {
+  const out = [];
+  out.push(el("h4", { text: T("w.matrix") }));
+  out.push(table([D("node"), T("w.request"), D("final"), D("result"), "Proto", "TTFB", D("total"), ""],
+    d.matrix.map((r) => [r.node, r.label, r.final_url || "", r.loop ? "redirect loop" : (r.error_kind || r.status), r.proto || "",
+      ms(r.ttfb_ms), ms(r.total_ms), r.diff ? T("w.differs") : ""]),
+    { classes: [null, null, null, (v) => (/^[23]/.test(String(v)) ? "s-ok" : "s-error"), null, null, null, (v) => (v ? "s-icmp_blocked" : "")], ltr: [false, true, true, true, true, true, true, false] }));
+  const res = d.resources;
+  if (res && (res.resources || []).length) {
+    out.push(el("h4", { text: `${T("w.resources")} (${res.page.checked}/${res.page.found})` }));
+    const max = Math.max(1, ...res.resources.map((x) => x.total_ms || 0));
+    const rows = res.resources.map((x) => {
+      const bar = el("span", { class: "wf-bar" + ((x.issues || []).includes("failed") ? " bad" : (x.issues || []).includes("slow") ? " slow" : "") });
+      bar.style.width = Math.max(2, Math.round(((x.total_ms || 0) / max) * 100)) + "%"; // CSSOM, allowed by the CSP
+      return el("tr", {},
+        el("td", { text: x.kind }),
+        el("td", { class: "val", dir: "ltr", text: x.url }),
+        el("td", { class: /^[23]/.test(String(x.status)) ? "s-ok" : "s-error", text: x.error_kind || x.status || "" }),
+        el("td", { class: "wf" }, el("span", { class: "wf-track" }, bar), el("span", { class: "wf-ms", text: ms(x.total_ms) })),
+        el("td", { text: (x.issues || []).map((i) => T("w.issue." + i)).join(", ") }));
+    });
+    out.push(el("div", { class: "table-wrap" }, el("table", {},
+      el("thead", {}, el("tr", {}, [D("type"), D("url"), D("status"), T("w.time"), T("w.issues")].map((h) => el("th", { text: h })))),
+      el("tbody", {}, rows))));
+  }
+  return out;
 }
 
 // ---------- traceroute ----------
@@ -500,7 +643,12 @@ function stream(id) {
 async function startCheck(domain) {
   showError("");
   try {
-    const r = await api("/api/check", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ domain }) });
+    // With an origin IP the check goes to the Website Load endpoint, which
+    // adds the origin-direct comparison; the server validates the address.
+    const originIp = ($("origin").value || "").trim();
+    const path = originIp ? "/api/web-diagnose" : "/api/check";
+    const payload = originIp ? { domain, originIp } : { domain };
+    const r = await api(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     history.pushState(null, "", "/c/" + r.request_id);
     remember({ id: r.request_id, domain: r.domain.name, t: Date.now(), status: "" });
     stream(r.request_id);

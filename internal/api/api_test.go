@@ -15,6 +15,7 @@ import (
 
 	"domaindoctor/internal/clientip"
 	"domaindoctor/internal/dnsx"
+	"domaindoctor/internal/input"
 	"domaindoctor/internal/nodes"
 	"domaindoctor/internal/orchestrator"
 	"domaindoctor/internal/probe"
@@ -45,6 +46,9 @@ func (nopProber) HTTP(context.Context, probe.HTTPRequest) (*probe.HTTPResponse, 
 	return nil, nil
 }
 func (nopProber) Traceroute(context.Context, netip.Addr, int, func(string)) error { return nil }
+func (nopProber) Resources(context.Context, probe.ResourceRequest) (*probe.ResourceResponse, error) {
+	return nil, nil
+}
 
 func newServer(t *testing.T, reg blockingReg, maxConc int, storeCap int) (*Server, *httptest.Server) {
 	store, err := report.OpenStore(t.TempDir(), storeCap, 24*time.Hour)
@@ -265,4 +269,38 @@ func TestNodesAndTraceroute(t *testing.T) {
 		t.Fatal("traceroute without a check allowed")
 	}
 	_ = code
+}
+
+// TestWebDiagnoseOriginIPValidation: the user-supplied origin IP passes the
+// same SSRF policy as everything else, on the master (agents check again).
+func TestWebDiagnoseOriginIPValidation(t *testing.T) {
+	_, ts := newServer(t, blockingReg{}, 30, 10)
+	bad := []string{"10.0.0.5", "127.0.0.1", "169.254.169.254", "::1", "fe80::1", "::ffff:127.0.0.1", "0.0.0.0", "192.168.1.10", "100.64.0.1", "203.0.113.10", "example.com", "1.2.3.4:443"}
+	for i, ip := range bad {
+		code, m := post(t, ts.URL+"/api/web-diagnose", fmt.Sprintf("198.51.100.%d", 50+i), `{"domain":"example.com","originIp":"`+ip+`"}`)
+		if code != 400 || !strings.Contains(fmt.Sprint(m["error"]), "originIp") {
+			t.Errorf("origin %s: %d %v", ip, code, m)
+		}
+	}
+	if code, m := post(t, ts.URL+"/api/check", "198.51.100.90", `{"domain":"example.com","originIp":"203.0.113.10"}`); code != 400 {
+		t.Errorf("/api/check accepted originIp: %d %v", code, m)
+	}
+	code, m := post(t, ts.URL+"/api/web-diagnose", "198.51.100.91", `{"domain":"example.com","originIp":"93.184.215.14"}`)
+	if code != 202 || m["request_id"] == nil {
+		t.Fatalf("valid origin: %d %v", code, m)
+	}
+	waitDone(t, ts, m["request_id"].(string))
+	code, m = post(t, ts.URL+"/api/web-diagnose", "198.51.100.92", `{"domain":"example.com"}`)
+	if code != 202 {
+		t.Fatalf("without origin: %d %v", code, m)
+	}
+}
+
+func TestParseOriginIP(t *testing.T) {
+	if a, err := input.ParseOriginIP(" [2606:4700::1111] "); err != nil || a.String() != "2606:4700::1111" {
+		t.Fatalf("%v %v", a, err)
+	}
+	if a, err := input.ParseOriginIP(""); err != nil || a.IsValid() {
+		t.Fatal("empty origin should be no origin")
+	}
 }

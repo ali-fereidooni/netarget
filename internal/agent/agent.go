@@ -40,6 +40,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "ok") })
 	mux.HandleFunc("POST /v1/probe", s.probe)
 	mux.HandleFunc("POST /v1/http", s.http)
+	mux.HandleFunc("POST /v1/resources", s.resources)
 	mux.HandleFunc("GET /v1/traceroute", s.traceroute)
 	return s.auth(mux)
 }
@@ -259,4 +260,23 @@ func (c *Client) Traceroute(ctx context.Context, ip netip.Addr, maxHops int, lin
 		return ctx.Err()
 	}
 	return ErrUnreachable
+}
+
+func (s *Server) resources(w http.ResponseWriter, r *http.Request) {
+	var req probe.ResourceRequest
+	if !decode(w, r, &req) {
+		return
+	}
+	resp, err := s.P.Resources(r.Context(), req)
+	if err != nil {
+		s.logf("resources rejected: %v", err)
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request"})
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func (c *Client) Resources(ctx context.Context, req probe.ResourceRequest) (*probe.ResourceResponse, error) {
+	var out probe.ResourceResponse
+	return &out, c.postJSON(ctx, "/v1/resources", req, &out)
 }

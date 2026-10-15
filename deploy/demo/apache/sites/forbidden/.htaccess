@@ -1,0 +1,2 @@
+# Deliberate access rule: denies everyone (demo of a 403 from .htaccess).
+Require all denied

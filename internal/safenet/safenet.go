@@ -46,6 +46,7 @@ var blockedPrefixes = mustPrefixes(
 	"::ffff:0:0/96",   // v4-mapped (checked after Unmap, kept for safety)
 	"::/96",           // deprecated IPv4-compatible (::a.b.c.d)
 	"::ffff:0:0:0/96", // SIIT IPv4-translated
+	"2001::/32",       // Teredo (tunnels to arbitrary IPv4, incl. private)
 	"64:ff9b:1::/48",  // local-use NAT64
 	"100::/64",        // discard-only
 	"2001:db8::/32",   // documentation

@@ -45,6 +45,9 @@ func (fakeProber) HTTP(_ context.Context, r probe.HTTPRequest) (*probe.HTTPRespo
 	return out, nil
 }
 func (fakeProber) Traceroute(context.Context, netip.Addr, int, func(string)) error { return nil }
+func (fakeProber) Resources(context.Context, probe.ResourceRequest) (*probe.ResourceResponse, error) {
+	return &probe.ResourceResponse{}, nil
+}
 
 // lameWorld: com. delegates example.com to two servers that both refuse.
 func lameWorld(t *testing.T) *dnsx.Client {

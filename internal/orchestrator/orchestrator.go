@@ -5,6 +5,7 @@ package orchestrator
 import (
 	"context"
 	"fmt"
+	"net/netip"
 	"time"
 
 	"domaindoctor/internal/checks"
@@ -45,8 +46,21 @@ type Event struct {
 	Report *Report        `json:"report,omitempty"`
 }
 
-// Run executes all layers. emit is called synchronously for every event.
+// Options are per-run settings.
+type Options struct {
+	// OriginIP enables the origin-direct comparison in the Website load step.
+	// Callers must have validated it as a public address (safenet.IsBlocked);
+	// agents validate it again.
+	OriginIP netip.Addr
+}
+
+// Run executes all layers with default options.
 func Run(ctx context.Context, deps Deps, d input.Domain, id string, emit func(Event)) *Report {
+	return RunWith(ctx, deps, d, id, Options{}, emit)
+}
+
+// RunWith executes all layers. emit is called synchronously for every event.
+func RunWith(ctx context.Context, deps Deps, d input.Domain, id string, opts Options, emit func(Event)) *Report {
 	now := time.Now
 	if deps.Now != nil {
 		now = deps.Now
@@ -59,7 +73,7 @@ func Run(ctx context.Context, deps Deps, d input.Domain, id string, emit func(Ev
 	for _, n := range ns {
 		rep.Nodes = append(rep.Nodes, nodes.Public{ID: n.ID, Name: n.Name, Location: n.Location})
 	}
-	st := &checks.State{Domain: d.Name, Apex: d.Apex}
+	st := &checks.State{Domain: d.Name, Apex: d.Apex, OriginIP: opts.OriginIP}
 	blockedBy := ""
 
 	run := func(layer string, fn func() *checks.Result) {
@@ -98,6 +112,16 @@ func Run(ctx context.Context, deps Deps, d input.Domain, id string, emit func(Ev
 	})
 
 	rep.Diagnosis = diagnose.Diagnose(rep.Layers)
+	// When an earlier layer (expired domain, broken NS, no A record…) is the
+	// root cause, the website verdict is only a symptom: say so, so the UI
+	// does not present competing advice.
+	if rc := rep.Diagnosis.RootCause; rc != nil && rc.Layer != checks.LayerWeb {
+		for _, l := range rep.Layers {
+			if d, ok := l.Details.(*checks.WebDetails); ok && d.Verdict != nil && d.Verdict.Layer != "none" {
+				d.Verdict.SymptomOf = rc.Code
+			}
+		}
+	}
 	fin := now().UTC()
 	rep.FinishedAt, rep.Status = &fin, "done"
 	emit(Event{Type: "done", Report: rep})

@@ -1,7 +1,7 @@
 # Domain Doctor report: lame-shop.com
 
-- Checked: 2026-10-14 20:46:38 UTC
-- Request ID: `6c39dd3cc553ca66f86c88382628596d7ed025ec`
+- Checked: 2026-10-15 01:28:05 UTC
+- Request ID: `4d61783049504a1381667064f871ffb34e709470`
 - Measurement nodes: Frankfurt (DE (demo)), Tehran (IR (demo))
 
 ## Diagnosis
@@ -16,7 +16,7 @@ Symptoms explained by the cause:
 - ns2.lame-shop.com. does not answer DNS queries (timeout). — explained by `ns.none_usable`
 - DNS zone was not checked: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively) — explained by `ns.none_usable`
 - Reachability was not checked: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively) — explained by `ns.none_usable`
-- Web server was not checked: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively) — explained by `ns.none_usable`
+- Website load was not checked: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively) — explained by `ns.none_usable`
 
 ### Fixes (in priority order)
 
@@ -30,11 +30,11 @@ Symptoms explained by the cause:
 | Name servers | ❌ FAIL | 2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively |
 | DNS zone | ⏭️ SKIPPED | Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively) |
 | Reachability | ⏭️ SKIPPED | Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively) |
-| Web server | ⏭️ SKIPPED | Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively) |
+| Website load | ⏭️ SKIPPED | Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively) |
 
 ### ✅ Domain registration — OK
 
-- **INFO** `reg.ok` Registered until 2027-08-15 (304 days left).
+- **INFO** `reg.ok` Registered until 2027-08-16 (304 days left).
 
 ### ❌ Name servers — FAIL
 
@@ -44,7 +44,7 @@ Symptoms explained by the cause:
 
 | Name server | IP | Status | AA | Serial | RTT ms |
 |---|---|---|---|---|---|
-| ns1.lame-shop.com. | 5.0.0.1 | lame | false | 0 | 1.0 |
+| ns1.lame-shop.com. | 5.0.0.1 | lame | false | 0 | 0.0 |
 | ns2.lame-shop.com. | 5.0.1.1 | unreachable | false | 0 | 0.0 |
 
 ### ⏭️ DNS zone — SKIPPED
@@ -55,6 +55,6 @@ Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresse
 
 Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)
 
-### ⏭️ Web server — SKIPPED
+### ⏭️ Website load — SKIPPED
 
 Skipped: Name servers failed (2 name server(s) delegated by com, 0 of 2 addresses answer authoritatively)

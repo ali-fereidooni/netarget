@@ -24,7 +24,7 @@ import (
 )
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: domaindoctor check <domain> [--json] [--md] [--timeout 3m]")
+	fmt.Fprintln(os.Stderr, "usage: domaindoctor check <domain> [--json] [--md] [--origin-ip IP] [--timeout 3m]")
 	os.Exit(1)
 }
 
@@ -37,6 +37,7 @@ func main() {
 	asMD := fs.Bool("md", false, "print the report as Markdown")
 	timeout := fs.Duration("timeout", 3*time.Minute, "overall timeout")
 	verbose := fs.Bool("v", false, "log progress to stderr")
+	originFlag := fs.String("origin-ip", "", "origin server IP for the origin-direct test (only probe origins you own)")
 	// Flags may come before or after the domain.
 	_ = fs.Parse(os.Args[2:])
 	if fs.NArg() == 0 {
@@ -48,6 +49,11 @@ func main() {
 		usage()
 	}
 	d, err := input.Normalize(domainArg)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
+		os.Exit(1)
+	}
+	origin, err := input.ParseOriginIP(*originFlag)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
@@ -71,7 +77,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
 	quiet := *asJSON || *asMD
-	rep := orchestrator.Run(ctx, deps, d, report.NewID(), func(e orchestrator.Event) {
+	rep := orchestrator.RunWith(ctx, deps, d, report.NewID(), orchestrator.Options{OriginIP: origin}, func(e orchestrator.Event) {
 		if quiet || e.Type != "layer_done" {
 			return
 		}

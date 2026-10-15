@@ -2,10 +2,11 @@ package orchestrator
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"domaindoctor/internal/checks"
-	"domaindoctor/internal/probe"
+	"domaindoctor/internal/fingerprint"
 )
 
 var statusIcon = map[checks.Status]string{checks.OK: "✅", checks.WARN: "⚠️", checks.FAIL: "❌", checks.SKIPPED: "⏭️"}
@@ -96,40 +97,146 @@ func Markdown(rep *Report) string {
 				w("| %s | %s | %d | %d | %.0f%% | %.1f/%.1f/%.1f | %s | %s | %s |\n", r.Node, r.IP, r.Sent, r.Received, r.Loss, r.RTTMin, r.RTTAvg, r.RTTMax, r.TCP80, r.TCP443, r.Status)
 			}
 		case *checks.WebDetails:
-			for _, c := range det.Chains {
-				w("\n`%s`%s\n\n", c.Start, map[bool]string{true: " (redirect loop)", false: ""}[c.Loop])
-				for _, h := range c.Hops {
-					w("- %s → %s\n", h.URL, hopSummary(h))
-				}
-			}
-			if len(det.Nodes) > 1 {
-				w("\n| Node | URL | Final | Status | Total ms |\n|---|---|---|---|---|\n")
-				for _, n := range det.Nodes {
-					st := fmt.Sprint(n.Status)
-					if n.ErrorKind != "" {
-						st = n.ErrorKind
-					}
-					w("| %s | %s | %s | %s | %.0f |\n", n.Node, n.URL, n.FinalURL, st, n.TotalMS)
-				}
-			}
+			webMarkdown(w, det)
 		}
 	}
 	return b.String()
-}
-
-func hopSummary(h probe.Hop) string {
-	if h.ErrorKind != "" {
-		return "error: " + h.ErrorKind
-	}
-	s := fmt.Sprintf("%d %s (%.0f ms)", h.Status, h.StatusText, h.Timing.TotalMS)
-	if h.Location != "" {
-		s += " Location: " + h.Location
-	}
-	return s
 }
 
 func mdEscape(s string) string {
 	s = strings.ReplaceAll(s, "|", "\\|")
 	s = strings.ReplaceAll(s, "\n", " ")
 	return strings.ReplaceAll(s, "`", "'")
+}
+
+// webMarkdown renders the Website load section: verdict, evidence, fixes
+// (snippets for the detected server, or all of them), what could not be
+// determined, fingerprints, the request matrix and the resources.
+func webMarkdown(w func(string, ...any), det *checks.WebDetails) {
+	if v := det.Verdict; v != nil {
+		w("\n**Verdict:** %s\n\n", v.Text)
+		w("- Layer at fault: **%s** (confidence %s, %.0f%%)\n", v.Layer, v.Level, v.Confidence*100)
+		if v.SymptomOf != "" {
+			w("- This is a symptom of `%s`, found in an earlier step; fix that first.\n", v.SymptomOf)
+		}
+		if det.OriginIP != "" {
+			w("- Origin-direct test against %s was included.\n", det.OriginIP)
+		}
+		if len(v.Evidence) > 0 {
+			w("\nEvidence:\n\n")
+			for _, e := range v.Evidence {
+				w("- `%s`\n", mdEscape(e))
+			}
+		}
+		if len(v.Causes) > 0 {
+			w("\nLikely causes:\n\n")
+			for _, c := range v.Causes {
+				w("- (%s) %s\n", c.Likelihood, c.Text)
+			}
+		}
+		server := ""
+		if det.Fingerprints != nil {
+			if s := det.Fingerprints.Primary("server"); s != nil {
+				server = s.ID
+			}
+		}
+		if len(v.Fixes) > 0 {
+			w("\nFix steps:\n\n")
+			for i, f := range v.Fixes {
+				w("%d. %s\n", i+1, f.Step)
+				if f.Why != "" {
+					w("   - Why: %s\n", f.Why)
+				}
+				keys := snippetKeys(f.Snippets, server)
+				for _, k := range keys {
+					w("\n   %s:\n\n   ```\n", k)
+					for _, line := range strings.Split(f.Snippets[k], "\n") {
+						w("   %s\n", line)
+					}
+					w("   ```\n\n")
+				}
+				w("   - Verify: %s\n", f.Verify)
+				if f.Warning != "" {
+					w("   - Warning: %s\n", f.Warning)
+				}
+			}
+		}
+		for _, x := range v.Warnings {
+			w("\n> Warning: %s\n", x)
+		}
+		if len(v.CannotDetermine) > 0 {
+			w("\nCould not determine from outside:\n\n")
+			for _, x := range v.CannotDetermine {
+				w("- %s\n", x)
+			}
+		}
+	}
+	if fp := det.Fingerprints; fp != nil {
+		var rows []string
+		for _, list := range [][]fingerprint.Detection{fp.CDN, fp.Server, fp.Platform} {
+			for _, d := range list {
+				rows = append(rows, fmt.Sprintf("| %s | %s | %s | %s |", d.Kind, d.Name, d.Level, mdEscape(strings.Join(d.Evidence, "; "))))
+			}
+		}
+		if len(rows) > 0 {
+			w("\n| Kind | Detected | Confidence | Evidence |\n|---|---|---|---|\n%s\n", strings.Join(rows, "\n"))
+		}
+	}
+	if len(det.Matrix) > 0 {
+		w("\n| Node | Request | Final | Result | Proto | TTFB ms | Total ms | Differs |\n|---|---|---|---|---|---|---|---|\n")
+		for _, r := range det.Matrix {
+			res := fmt.Sprint(r.Status)
+			if r.ErrorKind != "" {
+				res = r.ErrorKind
+			}
+			if r.Loop {
+				res = "redirect loop"
+			}
+			diff := ""
+			if r.Diff {
+				diff = "yes"
+			}
+			w("| %s | %s | %s | %s | %s | %.0f | %.0f | %s |\n", r.Node, mdEscape(r.Label), r.FinalURL, res, r.Proto, r.TTFBms, r.TotalMS, diff)
+		}
+	}
+	if res := det.Resources; res != nil && len(res.Resources) > 0 {
+		w("\nResources (%d found, %d checked):\n\n| Kind | URL | Status | ms | Size | Issues |\n|---|---|---|---|---|---|\n", res.Page.Found, res.Page.Checked)
+		for _, x := range res.Resources {
+			st := fmt.Sprint(x.Status)
+			if x.ErrorKind != "" {
+				st = x.ErrorKind
+			}
+			w("| %s | %s | %s | %.0f | %d | %s |\n", x.Kind, mdEscape(x.URL), st, x.TotalMS, x.Size, strings.Join(x.Issues, ", "))
+		}
+	}
+	for _, m := range det.Matches {
+		if det.Verdict != nil && m.RuleID == det.Verdict.RuleID {
+			continue
+		}
+		w("\n- Also: **%s** — %s (%s, %s)\n", m.Title, m.Verdict, m.Severity, m.Level)
+	}
+}
+
+// snippetKeys returns the snippet for the detected server (plus generic
+// targets) when known, otherwise every snippet, in a stable order.
+func snippetKeys(sn map[string]string, server string) []string {
+	var keys []string
+	for k := range sn {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	if server == "" {
+		return keys
+	}
+	var out []string
+	serverKinds := map[string]bool{"apache": true, "nginx": true, "litespeed": true, "iis": true, "caddy": true}
+	for _, k := range keys {
+		if k == server || !serverKinds[k] {
+			out = append(out, k)
+		}
+	}
+	if len(out) == 0 {
+		return keys
+	}
+	return out
 }

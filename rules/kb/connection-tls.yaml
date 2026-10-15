@@ -1,0 +1,354 @@
+# Connection- and TLS-level failures of the canonical HTTPS request.
+
+- id: conn.refused
+  title: Connection refused on the web port
+  layer: server
+  severity: fail
+  group: conn
+  match:
+    all:
+      - error_kind: [refused]
+  confidence:
+    base: 0.8
+    boosts:
+      - {when: {signal: all_nodes_fail}, add: 0.1, why: "every measurement node is refused"}
+  verdict: "The server actively refuses connections to {host} on the web port: no web server is listening"
+  causes:
+    - {text: "The web server service is stopped or failed to start (often a config error after a change).", likelihood: high}
+    - {text: "The web server listens only on localhost or another port/IP.", likelihood: medium}
+    - {text: "A firewall rejects (rather than drops) the connection.", likelihood: low}
+  fixes:
+    - step: "Start the web server and check why it stopped; test the configuration first."
+      snippets:
+        nginx: "sudo nginx -t && sudo systemctl restart nginx\nsudo journalctl -u nginx -n 30"
+        apache: "sudo apachectl configtest && sudo systemctl restart apache2   # or httpd\nsudo journalctl -u apache2 -n 30"
+        litespeed: "sudo systemctl restart lsws && sudo tail -n 30 /usr/local/lsws/logs/error.log"
+        iis: "iisreset /status\nGet-Service W3SVC | Start-Service"
+      verify: "ss -ltnp shows the server on 0.0.0.0:443 (and :80); the site loads."
+    - step: "Make sure it listens on all public addresses, not only 127.0.0.1."
+      snippets:
+        nginx: "listen 443 ssl;      # not 'listen 127.0.0.1:443'\nlisten [::]:443 ssl;"
+        apache: "Listen 443"
+      verify: "curl from another machine connects."
+  cannot_determine:
+    - "Whether the process crashed or was stopped (needs the service logs)."
+  tests:
+    - name: refused
+      given: {error_kind: refused, signals: [all_nodes_fail]}
+      expect: match
+      min_confidence: 0.9
+
+- id: conn.timeout
+  title: Connection or response timed out
+  layer: network
+  severity: fail
+  group: conn
+  match:
+    all:
+      - error_kind: [timeout]
+  confidence:
+    base: 0.7
+    boosts:
+      - {when: {signal: regional}, add: 0.1, why: "only some regions time out"}
+  verdict: "Requests to {host} time out: packets are dropped by a firewall or the server is too overloaded to answer"
+  causes:
+    - {text: "A firewall/security group drops traffic to ports 80/443 (or drops whole regions/countries).", likelihood: high}
+    - {text: "The server is overloaded or out of connections.", likelihood: medium}
+    - {text: "The DNS record points to an address where no server answers.", likelihood: medium}
+  fixes:
+    - step: "Allow inbound TCP 80 and 443 in every firewall layer (OS firewall, cloud security group, hosting firewall)."
+      applies_to: [firewall]
+      snippets:
+        firewall: "sudo ufw allow 80/tcp\nsudo ufw allow 443/tcp\nsudo ufw status verbose"
+      verify: "curl -m 10 -sI https://{host}/ from an outside machine answers."
+    - step: "Check load and connection limits on the server."
+      snippets:
+        any: "uptime; ss -s; sudo dmesg | tail"
+      verify: "Load is normal and new connections are accepted."
+  cannot_determine:
+    - "Where along the path packets are dropped (run a traceroute from the failing node)."
+  tests:
+    - name: timeout
+      given: {error_kind: timeout}
+      expect: match
+
+- id: conn.reset
+  title: Connection reset by the server
+  layer: server
+  severity: fail
+  group: conn
+  match:
+    all:
+      - error_kind: [reset]
+  confidence: {base: 0.65}
+  verdict: "The connection to {host} is reset before a response arrives"
+  causes:
+    - {text: "A worker process crashes while handling the request.", likelihood: medium}
+    - {text: "A firewall, IPS or middlebox resets the connection (sometimes only for some countries or protocols).", likelihood: medium}
+    - {text: "TLS misconfiguration that aborts the handshake.", likelihood: medium}
+  fixes:
+    - step: "Check the web server error log for crashed workers or segfaults at the time of the request."
+      snippets:
+        any: "sudo journalctl -n 100 | grep -i -E 'segfault|signal|exited'"
+      verify: "No crashes are logged; the request completes."
+    - step: "Compare nodes and HTTP versions in the request matrix; if only some paths reset, look at network filtering."
+      verify: "All nodes complete the request."
+  cannot_determine:
+    - "Whether a device between the client and the server sent the reset."
+  tests:
+    - name: reset
+      given: {error_kind: reset}
+      expect: match
+
+- id: conn.dns
+  title: The host name does not resolve for the web check
+  layer: dns
+  severity: fail
+  group: conn
+  match:
+    all:
+      - error_kind: [dns]
+  confidence: {base: 0.7}
+  verdict: "The measurement nodes could not resolve {host}, so no connection was possible"
+  causes:
+    - {text: "Missing A/AAAA records or a redirect to a host name that does not exist.", likelihood: high}
+  fixes:
+    - step: "See the DNS zone step: add A/AAAA records for the host, or fix the redirect target name."
+      applies_to: [dns]
+      verify: "dig +short {host} returns an address."
+  cannot_determine:
+    - "Resolver-specific caching on the nodes."
+  tests:
+    - name: dns
+      given: {error_kind: dns}
+      expect: match
+
+- id: tls.handshake
+  title: TLS handshake failure
+  layer: tls
+  severity: fail
+  group: conn
+  match:
+    all:
+      - error_kind: [tls_handshake]
+  confidence:
+    base: 0.75
+    boosts:
+      - {when: {signal: https_fail_http_ok}, add: 0.1, why: "plain HTTP works, only HTTPS fails"}
+  verdict: "HTTPS to {host} fails during the TLS handshake"
+  causes:
+    - {text: "No certificate is configured for this host name (SNI), so the server aborts or serves nothing on 443.", likelihood: high}
+    - {text: "Port 443 speaks plain HTTP, not TLS.", likelihood: medium}
+    - {text: "Only outdated protocols/ciphers are enabled (no TLS 1.2/1.3).", likelihood: medium}
+  fixes:
+    - step: "Configure a certificate for {host} on port 443 and enable TLS 1.2 and 1.3."
+      snippets:
+        nginx: "listen 443 ssl;\nserver_name {host};\nssl_certificate /etc/letsencrypt/live/{host}/fullchain.pem;\nssl_certificate_key /etc/letsencrypt/live/{host}/privkey.pem;\nssl_protocols TLSv1.2 TLSv1.3;"
+        apache: "SSLEngine on\nSSLCertificateFile /etc/letsencrypt/live/{host}/fullchain.pem\nSSLCertificateKeyFile /etc/letsencrypt/live/{host}/privkey.pem\nSSLProtocol -all +TLSv1.2 +TLSv1.3"
+        iis: "Add an https binding for {host} with 'Require Server Name Indication' and the right certificate."
+      verify: "openssl s_client -connect {host}:443 -servername {host} </dev/null completes and shows the certificate."
+  cannot_determine:
+    - "The server's TLS configuration files."
+  tests:
+    - name: handshake
+      given: {error_kind: tls_handshake, signals: [https_fail_http_ok]}
+      expect: match
+
+- id: tls.expired
+  title: Expired TLS certificate
+  layer: tls
+  severity: fail
+  group: tls-cert
+  priority: 1
+  match:
+    all:
+      - signal: tls_expired
+  confidence: {base: 0.95}
+  verdict: "The TLS certificate for {host} has expired; browsers show a security warning instead of the site"
+  causes:
+    - {text: "Automatic renewal (certbot/ACME) stopped working: a failed validation, a removed cron/timer, or a firewall blocking port 80.", likelihood: high}
+    - {text: "The certificate was renewed on disk but the web server was not reloaded.", likelihood: medium}
+  fixes:
+    - step: "Renew the certificate and reload the web server."
+      snippets:
+        nginx: "sudo certbot renew && sudo systemctl reload nginx"
+        apache: "sudo certbot renew && sudo systemctl reload apache2"
+        iis: "Run your ACME client (e.g. win-acme: wacs.exe --renew) and confirm the binding uses the new certificate."
+      verify: "echo | openssl s_client -connect {host}:443 -servername {host} 2>/dev/null | openssl x509 -noout -enddate"
+    - step: "Fix automatic renewal so it does not happen again."
+      snippets:
+        any: "sudo certbot renew --dry-run\nsystemctl list-timers | grep certbot"
+      verify: "The dry run succeeds."
+  cannot_determine:
+    - "Why the renewal job failed (see the ACME client's log)."
+  tests:
+    - name: expired
+      given: {status: 200, signals: [tls_expired]}
+      expect: match
+
+- id: tls.hostname-mismatch
+  title: Certificate does not match the host name
+  layer: tls
+  severity: fail
+  group: tls-name
+  match:
+    all:
+      - signal: tls_hostname_mismatch
+  confidence:
+    base: 0.85
+    boosts:
+      - {when: {signal: default_page}, add: 0.1, why: "a default page is served too: the request lands on the wrong virtual host"}
+  verdict: "The server presents a certificate for a different name than {host}; the request probably reaches the wrong virtual host"
+  causes:
+    - {text: "{host} (or www) is missing from the certificate's names (SAN).", likelihood: high}
+    - {text: "The TLS virtual host for {host} is missing, so the server's default certificate/site answers.", likelihood: high}
+  fixes:
+    - step: "Issue a certificate that covers {host} (and www.{host} if visitors use it)."
+      snippets:
+        nginx: "sudo certbot --nginx -d {host}   # add -d www.{host} only if www points to this server"
+        apache: "sudo certbot --apache -d {host}   # add -d www.{host} only if www points to this server"
+      verify: "The certificate's SAN list contains the host name."
+    - step: "Make sure a 443 virtual host has server_name/ServerName {host} and uses that certificate."
+      snippets:
+        nginx: "server { listen 443 ssl; server_name {host} www.{host}; ... }"
+        apache: "<VirtualHost *:443>\n  ServerName {host}\n  ServerAlias www.{host}\n  ...\n</VirtualHost>"
+      verify: "openssl s_client -connect {host}:443 -servername {host} shows the right subject."
+  cannot_determine:
+    - "Which virtual host currently answers on the server."
+  tests:
+    - name: mismatch
+      given: {status: 200, signals: [tls_hostname_mismatch]}
+      expect: match
+
+- id: tls.incomplete-chain
+  title: Incomplete certificate chain
+  layer: tls
+  severity: warn
+  group: tls-chain
+  match:
+    all:
+      - signal: tls_incomplete_chain
+  confidence: {base: 0.7}
+  verdict: "The server does not send its intermediate certificate; some browsers, phones and API clients reject the connection"
+  causes:
+    - {text: "The server is configured with cert.pem instead of fullchain.pem.", likelihood: high}
+    - {text: "The certificate is from a private CA or a CDN origin CA (e.g. Cloudflare Origin CA) whose root is not public, so no chain can complete for visitors.", likelihood: low}
+  fixes:
+    - step: "Configure the full chain file."
+      snippets:
+        nginx: "ssl_certificate /etc/letsencrypt/live/{host}/fullchain.pem;"
+        apache: "SSLCertificateFile /etc/letsencrypt/live/{host}/fullchain.pem\n# Apache < 2.4.8: SSLCertificateChainFile /etc/letsencrypt/live/{host}/chain.pem"
+        iis: "Import the intermediate certificate into the 'Intermediate Certification Authorities' store."
+      verify: "openssl s_client -connect {host}:443 -servername {host} -showcerts </dev/null shows two or more certificates."
+  cannot_determine:
+    - "Which clients currently fail (browsers can sometimes fetch the missing intermediate themselves)."
+    - "Whether this certificate is meant only for a CDN in front of the site (then visitors should not reach it directly)."
+  tests:
+    - name: chain
+      given: {status: 200, signals: [tls_incomplete_chain]}
+      expect: match
+
+- id: tls.untrusted
+  title: Untrusted certificate
+  layer: tls
+  severity: fail
+  group: tls-chain
+  match:
+    all:
+      - signal: tls_untrusted
+  confidence: {base: 0.85}
+  verdict: "The certificate for {host} is not trusted by browsers (self-signed or from a private CA)"
+  causes:
+    - {text: "A self-signed or private-CA certificate is used on a public site.", likelihood: high}
+    - {text: "A CDN origin certificate (only trusted by the CDN) is served directly to visitors.", likelihood: medium}
+  fixes:
+    - step: "Use a certificate from a public CA (e.g. Let's Encrypt) for visitor-facing traffic."
+      snippets:
+        nginx: "sudo certbot --nginx -d {host}   # add -d www.{host} only if www points to this server"
+        apache: "sudo certbot --apache -d {host}   # add -d www.{host} only if www points to this server"
+      verify: "The browser shows a valid padlock; curl https://{host}/ works without -k."
+  cannot_determine:
+    - "Whether the certificate is meant only for a CDN in front of the site."
+  tests:
+    - name: untrusted
+      given: {status: 200, signals: [tls_untrusted]}
+      expect: match
+
+- id: tls.old-protocol
+  title: Outdated TLS version
+  layer: tls
+  severity: warn
+  match:
+    all:
+      - signal: tls_old_protocol
+  confidence: {base: 0.9}
+  verdict: "The server negotiates an outdated TLS version (1.0/1.1); modern browsers refuse it"
+  causes:
+    - {text: "Old server software or an explicit ssl_protocols/SSLProtocol setting.", likelihood: high}
+  fixes:
+    - step: "Enable TLS 1.2 and 1.3 only."
+      snippets:
+        nginx: "ssl_protocols TLSv1.2 TLSv1.3;"
+        apache: "SSLProtocol -all +TLSv1.2 +TLSv1.3"
+        iis: "Enable TLS 1.2 in the registry (SCHANNEL) or with IIS Crypto; disable TLS 1.0/1.1."
+      verify: "openssl s_client -tls1_2 -connect {host}:443 -servername {host} </dev/null succeeds, and openssl s_client -tls1_1 -cipher 'DEFAULT@SECLEVEL=0' -connect {host}:443 -servername {host} </dev/null fails (SECLEVEL=0 lets a modern openssl even try TLS 1.1)."
+  cannot_determine:
+    - "Whether some old clients still need TLS 1.0."
+  tests:
+    - name: old tls
+      given: {status: 200, signals: [tls_old_protocol]}
+      expect: match
+
+- id: tls.expiring-soon
+  title: Certificate expires soon
+  layer: tls
+  severity: warn
+  group: tls-cert
+  priority: 5
+  match:
+    all:
+      - signal: tls_expiring_soon
+  confidence: {base: 0.9}
+  verdict: "The TLS certificate for {host} expires within two weeks"
+  causes:
+    - {text: "Automatic renewal is not running or failing.", likelihood: high}
+  fixes:
+    - step: "Test and fix automatic renewal now."
+      snippets:
+        any: "sudo certbot renew --dry-run"
+      verify: "The dry run succeeds; the expiry moves out after renewal."
+  cannot_determine:
+    - "Whether a renewal is already scheduled."
+  tests:
+    - name: soon
+      given: {status: 200, signals: [tls_expiring_soon]}
+      expect: match
+
+- id: tls.https-broken-http-ok
+  title: HTTPS broken while plain HTTP works
+  layer: tls
+  severity: fail
+  group: conn
+  match:
+    all:
+      - signal: https_fail_http_ok
+  confidence: {base: 0.88}
+  verdict: "{host} works over plain HTTP but not over HTTPS; browsers that remember HSTS cannot fall back to HTTP"
+  causes:
+    - {text: "HTTPS is not configured (no certificate or no 443 virtual host) or is broken.", likelihood: high}
+    - {text: "Port 443 is closed in a firewall while 80 is open.", likelihood: medium}
+  fixes:
+    - step: "Configure HTTPS for the host (certificate + 443 virtual host) and open port 443."
+      snippets:
+        nginx: "sudo certbot --nginx -d {host}   # add -d www.{host} only if www points to this server"
+        apache: "sudo certbot --apache -d {host}   # add -d www.{host} only if www points to this server"
+        firewall: "sudo ufw allow 443/tcp"
+      verify: "curl -sI https://{host}/ returns 200."
+  warnings:
+    - "If the site ever sent a Strict-Transport-Security header, browsers that saw it refuse plain HTTP until it expires (HSTS lock-in): fixing HTTPS is the only way back for them."
+  cannot_determine:
+    - "Whether HSTS was sent in the past (browsers cache it; we cannot see their stores)."
+  tests:
+    - name: https broken
+      given: {error_kind: tls_handshake, signals: [https_fail_http_ok]}
+      expect: match

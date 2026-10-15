@@ -1,6 +1,8 @@
 package probe
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -46,22 +48,68 @@ func (p *HTTPProber) Run(ctx context.Context, req HTTPRequest) *HTTPResponse {
 		limit = maxHops
 	}
 	for _, start := range req.URLs {
-		resp.Chains = append(resp.Chains, p.chain(ctx, start, req.Pinned, limit))
+		resp.Chains = append(resp.Chains, p.chain(ctx, start, req.Pinned, limit, HopOpts{}))
 	}
 	return resp
 }
 
-func (p *HTTPProber) chain(ctx context.Context, start string, pinned map[string][]netip.Addr, limit int) Chain {
+// HopOpts are the per-request variations of the request matrix.
+type HopOpts struct {
+	Method   string     // GET (default) or HEAD
+	UA       string     // key in UserAgents; "" = DomainDoctor default
+	Proto    string     // auto (default), h1, h2
+	Compress *bool      // nil = default Go behaviour; true = gzip,deflate; false = identity
+	OriginIP netip.Addr // pin the start host to this address (origin-direct test)
+	Sample   bool       // keep a size-limited body sample and full headers
+
+	SampleLimit int   // bytes of body to keep (default 64 KB)
+	CountLimit  int64 // bytes of body to read and count (default 2 MB)
+	// Site, when set, limits sampling and non-default User-Agents to hosts of
+	// this registrable domain: a redirect to another site is followed and
+	// measured, but its body and headers are not returned (no open proxy).
+	Site   string
+	Accept string // Accept header override (resource checks)
+	Origin string // Origin header (CORS checks for crossorigin assets and fonts)
+}
+
+// UserAgents are the only User-Agents agents send. Variation exists solely
+// to diagnose bot/WAF blocks; arbitrary UAs are not accepted.
+var UserAgents = map[string]string{
+	"browser":   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+	"curl":      "curl/8.5.0",
+	"googlebot": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+}
+
+const (
+	maxSample    = 64 << 10 // body bytes kept per response
+	maxBodyCount = 2 << 20  // body bytes read (and counted) per response
+)
+
+func (p *HTTPProber) chain(ctx context.Context, start string, pinned map[string][]netip.Addr, limit int, o HopOpts) Chain {
 	ch := Chain{Start: start}
 	seen := map[string]bool{}
 	cur := start
+	startHost := ""
+	if u, err := url.Parse(start); err == nil {
+		startHost = strings.ToLower(u.Hostname())
+	}
+	if o.OriginIP.IsValid() {
+		// Origin-direct: only the start host is pinned to the supplied
+		// address; any other host in the chain is resolved normally.
+		pp := map[string][]netip.Addr{}
+		for k, v := range pinned {
+			pp[k] = v
+		}
+		pp[startHost] = []netip.Addr{o.OriginIP}
+		pinned = pp
+	}
 	for i := 0; i < limit; i++ {
 		if seen[cur] {
 			ch.Loop = true
 			return ch
 		}
 		seen[cur] = true
-		hop := p.hop(ctx, cur, pinned)
+		hop := p.hop(ctx, cur, pinned, o)
 		ch.Hops = append(ch.Hops, hop)
 		if hop.ErrorKind != "" || hop.Location == "" || hop.Status < 300 || hop.Status > 399 {
 			return ch
@@ -87,14 +135,23 @@ func (p *HTTPProber) timeout() time.Duration {
 	return 10 * time.Second
 }
 
-func (p *HTTPProber) hop(ctx context.Context, rawURL string, pinned map[string][]netip.Addr) (h Hop) {
+func (p *HTTPProber) hop(ctx context.Context, rawURL string, pinned map[string][]netip.Addr, o HopOpts) (h Hop) {
 	h.URL = rawURL
+	h.Method = http.MethodGet
+	if o.Method == http.MethodHead {
+		h.Method = http.MethodHead
+	}
 	fail := func(kind, msg string) Hop { h.ErrorKind, h.Error = kind, msg; return h }
 	u, err := url.Parse(rawURL)
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" {
 		return fail("bad_url", "unsupported URL")
 	}
 	host := strings.ToLower(u.Hostname())
+	if u.User != nil {
+		// Go would turn user:pass@ into an Authorization header.
+		return fail("bad_url", "URL with embedded credentials not followed")
+	}
+	onSite := o.Site == "" || SameSite(host, o.Site)
 	port := u.Port()
 	if port == "" {
 		port = map[string]string{"http": "80", "https": "443"}[u.Scheme]
@@ -157,6 +214,14 @@ func (p *HTTPProber) hop(ctx context.Context, rawURL string, pinned map[string][
 		TLSHandshakeTimeout:    p.timeout(),
 		ResponseHeaderTimeout:  p.timeout(),
 		MaxResponseHeaderBytes: 64 << 10,
+		ForceAttemptHTTP2:      o.Proto != "h1",
+	}
+	if o.Proto == "h1" {
+		tr.TLSClientConfig.NextProtos = []string{"http/1.1"}
+		tr.TLSNextProto = map[string]func(string, *tls.Conn) http.RoundTripper{}
+	}
+	if o.Compress != nil && !*o.Compress {
+		tr.DisableCompression = true
 	}
 	defer tr.CloseIdleConnections()
 	trace := &httptrace.ClientTrace{
@@ -166,12 +231,31 @@ func (p *HTTPProber) hop(ctx context.Context, rawURL string, pinned map[string][
 	}
 	rctx, cancel := context.WithTimeout(httptrace.WithClientTrace(ctx, trace), p.timeout())
 	defer cancel()
-	req, err := http.NewRequestWithContext(rctx, http.MethodGet, rawURL, nil)
+	req, err := http.NewRequestWithContext(rctx, h.Method, rawURL, nil)
 	if err != nil {
 		return fail("bad_url", "invalid URL")
 	}
-	req.Header.Set("User-Agent", "DomainDoctor/1.0 (+web check)")
-	req.Header.Set("Accept", "text/html,*/*")
+	ua := "DomainDoctor/1.0 (+web check)"
+	if v, ok := UserAgents[o.UA]; ok && onSite {
+		ua = v
+	}
+	req.Header.Set("User-Agent", ua)
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,*/*;q=0.8")
+	if o.Accept != "" {
+		req.Header.Set("Accept", o.Accept)
+	}
+	if o.Origin != "" {
+		req.Header.Set("Origin", o.Origin)
+	}
+	if o.Compress != nil {
+		if *o.Compress {
+			// Explicit header: Go then reports Content-Encoding instead of
+			// silently decompressing, so missing compression is visible.
+			req.Header.Set("Accept-Encoding", "gzip, deflate")
+		} else {
+			req.Header.Set("Accept-Encoding", "identity")
+		}
+	}
 	client := &http.Client{Transport: tr, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	resp, err := client.Do(req)
 	if !connStart.IsZero() && !connDone.IsZero() {
@@ -192,11 +276,33 @@ func (p *HTTPProber) hop(ctx context.Context, rawURL string, pinned map[string][
 		return fail(kind, describe(kind))
 	}
 	defer resp.Body.Close()
-	body, _ := io.ReadAll(io.LimitReader(resp.Body, 64<<10))
+	keep := int64(maxSample)
+	if o.SampleLimit > 0 {
+		keep = int64(o.SampleLimit)
+	}
+	count := int64(maxBodyCount)
+	if o.CountLimit > 0 {
+		count = o.CountLimit
+	}
+	body, n, truncated := readCounted(resp.Body, keep, count)
+	if truncated && resp.ContentLength > n {
+		n = resp.ContentLength // report the declared size when we stopped reading early
+	}
 	if !firstByte.IsZero() {
 		h.Timing.TTFBms = ms(firstByte.Sub(start))
 	}
 	h.Timing.TotalMS = ms(time.Since(start))
+	h.Proto = resp.Proto
+	h.BodySize, h.BodyTruncated = n, truncated
+	h.ContentEncoding = resp.Header.Get("Content-Encoding")
+	if strings.EqualFold(h.ContentEncoding, "gzip") {
+		body = gunzipPrefix(body, int(keep))
+	}
+	if o.Sample && onSite {
+		h.AllHeaders = capHeaders(resp.Header)
+		h.Cookies = cookieNames(resp.Header)
+		h.BodySample = strings.ToValidUTF8(string(body), "�")
+	}
 	h.Status = resp.StatusCode
 	h.StatusText = http.StatusText(resp.StatusCode)
 	h.Location = resp.Header.Get("Location")
@@ -230,6 +336,78 @@ func detectCDN(resp *http.Response, body []byte) (string, bool) {
 		return "Fastly", resp.StatusCode >= 500 && strings.Contains(b, "fastly")
 	}
 	return "", false
+}
+
+// readCounted keeps the first keep bytes and counts up to count bytes in total.
+func readCounted(r io.Reader, keep, count int64) ([]byte, int64, bool) {
+	buf := make([]byte, 0, 16<<10)
+	var n int64
+	chunk := make([]byte, 32<<10)
+	for n < count {
+		m, err := r.Read(chunk)
+		if m > 0 {
+			if int64(len(buf)) < keep {
+				take := m
+				if rem := keep - int64(len(buf)); int64(take) > rem {
+					take = int(rem)
+				}
+				buf = append(buf, chunk[:take]...)
+			}
+			n += int64(m)
+		}
+		if err != nil {
+			return buf, n, false
+		}
+	}
+	return buf, n, true
+}
+
+// gunzipPrefix decodes as much of a (possibly truncated) gzip body as it can.
+func gunzipPrefix(b []byte, limit int) []byte {
+	zr, err := gzip.NewReader(bytes.NewReader(b))
+	if err != nil {
+		return b
+	}
+	out, _ := io.ReadAll(io.LimitReader(zr, int64(limit)))
+	if len(out) == 0 {
+		return b
+	}
+	return out
+}
+
+// capHeaders lower-cases names and bounds count and value size.
+// At most 60 headers and 8 KB in total per response.
+func capHeaders(h http.Header) map[string][]string {
+	out := map[string][]string{}
+	n, size := 0, 0
+	for k, vs := range h {
+		if n >= 60 || size >= 8<<10 {
+			break
+		}
+		lk := strings.ToLower(k)
+		if lk == "set-cookie" {
+			continue // names only, via Cookies; values may carry session data
+		}
+		for _, v := range vs {
+			if len(v) > 512 {
+				v = v[:512] + "…"
+			}
+			size += len(lk) + len(v)
+			out[lk] = append(out[lk], v)
+		}
+		n++
+	}
+	return out
+}
+
+func cookieNames(h http.Header) []string {
+	var out []string
+	for _, c := range h.Values("Set-Cookie") {
+		if i := strings.IndexByte(c, '='); i > 0 && len(out) < 30 {
+			out = append(out, strings.TrimSpace(c[:i]))
+		}
+	}
+	return out
 }
 
 func describe(kind string) string {

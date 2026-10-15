@@ -15,6 +15,7 @@ type Prober interface {
 	Probe(ctx context.Context, req ProbeRequest) (*ProbeResponse, error)
 	HTTP(ctx context.Context, req HTTPRequest) (*HTTPResponse, error)
 	Traceroute(ctx context.Context, ip netip.Addr, maxHops int, line func(string)) error
+	Resources(ctx context.Context, req ResourceRequest) (*ResourceResponse, error)
 	Health(ctx context.Context) error
 }
 
@@ -62,11 +63,36 @@ type HTTPRequest struct {
 	URLs    []string                `json:"urls"`
 	Pinned  map[string][]netip.Addr `json:"pinned"` // host -> IPs resolved by the master
 	MaxHops int                     `json:"max_hops"`
+	Specs   []ReqSpec               `json:"specs,omitempty"` // request matrix (website load)
+}
+
+// ReqSpec is one cell of the request matrix.
+type ReqSpec struct {
+	ID       string     `json:"id"`
+	URL      string     `json:"url"`
+	Method   string     `json:"method"`             // GET or HEAD
+	UA       string     `json:"ua"`                 // browser, curl, googlebot
+	Proto    string     `json:"proto"`              // auto, h1, h2
+	Compress *bool      `json:"compress,omitempty"` // nil = default
+	OriginIP netip.Addr `json:"origin_ip,omitempty"`
+	Sample   bool       `json:"sample"`
+}
+
+type SpecResult struct {
+	Spec  ReqSpec `json:"spec"`
+	Chain Chain   `json:"chain"`
 }
 
 type HTTPResponse struct {
-	Chains []Chain `json:"chains"`
+	Chains  []Chain      `json:"chains"`
+	Results []SpecResult `json:"results,omitempty"`
 }
+
+// Limits for the request matrix, enforced by the agent.
+const (
+	MaxSpecs        = 20
+	MaxSampleBudget = 1 << 20 // total body-sample bytes returned per matrix call
+)
 
 type Chain struct {
 	Start string `json:"start"`
@@ -83,7 +109,18 @@ func (c *Chain) Final() *Hop {
 }
 
 type Hop struct {
-	URL        string            `json:"url"`
+	URL    string `json:"url"`
+	Method string `json:"method,omitempty"`
+	Proto  string `json:"proto,omitempty"` // negotiated, e.g. HTTP/2.0
+
+	// Filled for sampled requests (request matrix).
+	AllHeaders      map[string][]string `json:"all_headers,omitempty"`
+	Cookies         []string            `json:"cookies,omitempty"`
+	BodySample      string              `json:"body_sample,omitempty"`
+	BodySize        int64               `json:"body_size"`
+	BodyTruncated   bool                `json:"body_truncated,omitempty"`
+	ContentEncoding string              `json:"content_encoding,omitempty"`
+
 	IP         string            `json:"ip,omitempty"`
 	Status     int               `json:"status,omitempty"`
 	StatusText string            `json:"status_text,omitempty"`

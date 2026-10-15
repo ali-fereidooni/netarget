@@ -203,6 +203,7 @@ func Zone(ctx context.Context, st *State, c *dnsx.Client, now time.Time) *Result
 		if cn := get(name, dns.TypeCNAME); len(cn) > 0 {
 			target := cn[0].(*dns.CNAME).Target
 			exists = true
+			st.CNAMEs = append(st.CNAMEs, dnsx.Canon(target))
 			taddrs, tnx, err := c.LookupAddrs(ctx, target)
 			switch {
 			case err != nil:
