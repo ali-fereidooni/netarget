@@ -67,6 +67,44 @@ func TestLookupViaIANAReferral(t *testing.T) {
 	}
 }
 
+// .ir goes straight to whois.nic.ir (IANA is never asked), using the real
+// IRNIC answers for a registered domain whose holder hides the details and
+// for a domain that is not registered.
+func TestIRNICWithoutIANA(t *testing.T) {
+	addr := fakeWhois(t, map[string]string{
+		"netarget.ir": "% This is the IRNIC Whois server v2.0.0.\n% \n\n% NOTE: This output has been filtered.\n\n" +
+			"% Information related to 'netarget.ir'\n\ndomain:\t\tnetarget.ir\nascii:\t\tnetarget.ir\n" +
+			"remarks:\tThe information about this domain is hidden by the domain holder\n" +
+			"nserver:\tmeadow.parspack.net\nnserver:\tjungle.parspack.net\nsource:\t\tIRNIC\n",
+		"dfvmnkdfvj.ir": "% This is the IRNIC Whois server v2.0.0.\n% \n\n% NOTE: This output has been filtered.\n\n" +
+			"% Information related to 'dfvmnkdfvj.ir'\n\n%ERROR:101: no entries found\n% \n% No entries found in the selected source(s).\n",
+	})
+	d := &net.Dialer{}
+	var dialed []string
+	c := &Client{
+		Dial: func(ctx context.Context, n, server string) (net.Conn, error) {
+			dialed = append(dialed, server)
+			return d.DialContext(ctx, n, addr)
+		},
+		IANAServer: "whois.iana.org:43", Timeout: 2 * time.Second,
+	}
+	info, err := c.Lookup(context.Background(), "netarget.ir")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Server != "whois.nic.ir" || strings.Join(info.Nameservers, ",") != "meadow.parspack.net,jungle.parspack.net" || info.Expires != nil {
+		t.Errorf("registered: %+v", info)
+	}
+	if _, err := c.Lookup(context.Background(), "dfvmnkdfvj.ir"); !errors.Is(err, rdap.ErrNotFound) {
+		t.Errorf("unregistered: %v", err)
+	}
+	for _, s := range dialed {
+		if s != "whois.nic.ir:43" {
+			t.Errorf("dialed %s; .ir must not go through IANA", s)
+		}
+	}
+}
+
 func TestParseVerisignStyle(t *testing.T) {
 	resp := `   Domain Name: EXAMPLE.COM
    Registry Domain ID: 2336799_DOMAIN_COM-VRSN

@@ -51,13 +51,24 @@ func (c *Client) Query(ctx context.Context, server, q string) (string, error) {
 	return string(b), nil
 }
 
-// Server finds the authoritative WHOIS server for the TLD via IANA.
+// knownServers are registry WHOIS servers used without asking IANA. Some
+// hosts cannot reach whois.iana.org at all (the beta master times out on it),
+// and for TLDs without RDAP that referral was the only way to the registry.
+var knownServers = map[string]string{
+	"ir": "whois.nic.ir:43", // IRNIC; no RDAP service
+}
+
+// Server finds the authoritative WHOIS server for the TLD: a known server,
+// otherwise the IANA referral.
 func (c *Client) Server(ctx context.Context, domain string) (string, error) {
 	if c.ServerOverride != "" {
 		return c.ServerOverride, nil
 	}
 	labels := strings.Split(domain, ".")
 	tld := labels[len(labels)-1]
+	if s, ok := knownServers[tld]; ok {
+		return s, nil
+	}
 	resp, err := c.Query(ctx, c.IANAServer, tld)
 	if err != nil {
 		return "", err
@@ -106,7 +117,7 @@ var (
 	registrarKeys = []string{"registrar", "sponsoring registrar", "registrar name", "registrar organization"}
 	createdKeys   = []string{"creation date", "created", "created on", "registered on", "registration time", "domain registration date", "created date"}
 	expiresKeys   = []string{"registry expiry date", "registrar registration expiration date", "expiration date", "expiry date", "expires", "expire", "paid-till", "expire-date", "expiration-date", "expires on", "expiration time", "valid until"}
-	updatedKeys   = []string{"updated date", "last updated", "last-update", "changed", "last modified", "modified"}
+	updatedKeys   = []string{"updated date", "last updated", "last-update", "last-updated", "changed", "last modified", "modified"}
 	statusKeys    = []string{"domain status", "status", "state"}
 	nsKeys        = []string{"name server", "nserver", "nameserver", "name servers"}
 )
