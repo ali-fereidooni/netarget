@@ -56,6 +56,45 @@ const STRINGS = {
       dnssec: "DNSSEC", prop: "Public resolvers compared", perNode: "Per node", tls: "TLS certificate", protocol: "Protocol",
       subject: "Subject", issuer: "Issuer", valid: "Valid", match: "Hostname match", chain: "Chain", sans: "Names (SAN)", yes: "yes", no: "NO",
     },
+    renderFailed: "Could not show the details.",
+    err: {
+      invalid_body: "The request could not be read. Reload the page and try again.",
+      invalid_id: "This link is not valid.",
+      rate_limited: "Too many requests — try again in a minute.",
+      origin_not_allowed: "The origin IP can only be used with the website test.",
+      check_running: "A check from your address is already running — wait for it to finish.",
+      busy: "The server is busy — please try again shortly.",
+      check_not_found: "This check was not found or has expired — please run it again.",
+      still_running: "The check is still running.",
+      streaming_unsupported: "Live progress is not available here.",
+      too_many_streams: "Too many progress views are open from your address.",
+      too_many_viewers: "Too many people are watching this check right now.",
+      no_check_for_trace: "Run a check first; traceroute targets come from its results.",
+      ip_not_in_check: "This IP address was not found by the check.",
+      unknown_node: "Unknown measurement node.",
+      agent_unreachable: "The measurement node is not reachable.",
+      request_running: "Another request from your address is still running.",
+      perma_rate_limited: "Too many permanent links requested — try again later.",
+      perma_unavailable: "Permanent links are not available right now.",
+      perma_expired: "This result is too old to make permanent — please run the check again.",
+      report_too_large: "This report is too large to keep as a permanent link.",
+      perma_save_failed: "The permanent link could not be saved.",
+      perma_full: "Too many shared links are active right now — please try again later.",
+      report_not_found: "This report was not found or has expired.",
+      report_unreadable: "This stored report cannot be read.",
+      no_traceroute: "Traceroute is not available on this node.",
+      origin_not_ip: "The origin must be an IP address, e.g. 93.184.215.14.",
+      origin_zone: "The origin IP must not include an IPv6 zone.",
+      origin_private: "The origin must be a public IP address (not private, local or reserved).",
+      domain_empty: "Please enter a domain name.",
+      domain_ip: "IP addresses are not supported — enter a domain name such as example.com.",
+      domain_local: "Local or reserved names (localhost, .local, .internal…) cannot be checked.",
+      domain_invalid: "This does not look like a valid domain name.",
+      domain_no_tld: "Enter a full domain including its extension, e.g. example.com.",
+      domain_public_suffix: "This is a public suffix (like a TLD), not a domain you can register.",
+      network: "Could not reach the server. Check your connection and try again.",
+      http: "The server returned an error. Please try again.",
+    },
   },
   fa: {
     tagline: "عیب‌یابی دامنه", newCheck: "بررسی جدید",
@@ -107,6 +146,45 @@ const STRINGS = {
       delegation: "تفویض از {p}، پرسیده‌شده از {s}", zoneNS: "رکوردهای NS داخل زون:", queried: "منبع پرس‌وجو:", email: "احراز هویت ایمیل",
       dnssec: "DNSSEC", prop: "مقایسهٔ ریزالورهای عمومی", perNode: "به تفکیک گره", tls: "گواهی TLS", protocol: "پروتکل",
       subject: "موضوع", issuer: "صادرکننده", valid: "اعتبار", match: "تطابق نام میزبان", chain: "زنجیره", sans: "نام‌ها (SAN)", yes: "بله", no: "خیر",
+    },
+    renderFailed: "نمایش جزئیات ممکن نشد.",
+    err: {
+      invalid_body: "درخواست قابل خواندن نبود. صفحه را دوباره بارگذاری کنید و دوباره تلاش کنید.",
+      invalid_id: "این پیوند معتبر نیست.",
+      rate_limited: "تعداد درخواست‌ها بیش از حد است — یک دقیقهٔ دیگر دوباره تلاش کنید.",
+      origin_not_allowed: "IP مبدأ فقط در آزمون وب‌سایت قابل استفاده است.",
+      check_running: "یک بررسی از نشانی شما در حال اجراست — صبر کنید تا تمام شود.",
+      busy: "سرور مشغول است — کمی بعد دوباره تلاش کنید.",
+      check_not_found: "این بررسی پیدا نشد یا منقضی شده است — دوباره اجرایش کنید.",
+      still_running: "بررسی هنوز در حال اجراست.",
+      streaming_unsupported: "نمایش زندهٔ پیشرفت در اینجا در دسترس نیست.",
+      too_many_streams: "تعداد صفحه‌های بازِ نمایش پیشرفت از نشانی شما بیش از حد است.",
+      too_many_viewers: "در حال حاضر افراد زیادی این بررسی را تماشا می‌کنند.",
+      no_check_for_trace: "ابتدا یک بررسی اجرا کنید؛ مقصدهای Traceroute از نتایج آن می‌آیند.",
+      ip_not_in_check: "این نشانی IP در نتایج بررسی نبود.",
+      unknown_node: "گره اندازه‌گیری ناشناخته است.",
+      agent_unreachable: "گره اندازه‌گیری در دسترس نیست.",
+      request_running: "درخواست دیگری از نشانی شما هنوز در حال اجراست.",
+      perma_rate_limited: "درخواست پیوند دائمی بیش از حد است — بعداً دوباره تلاش کنید.",
+      perma_unavailable: "پیوند دائمی در حال حاضر در دسترس نیست.",
+      perma_expired: "این نتیجه برای ساختن پیوند دائمی قدیمی است — بررسی را دوباره اجرا کنید.",
+      report_too_large: "این گزارش برای نگهداری به‌صورت پیوند دائمی بیش از حد بزرگ است.",
+      perma_save_failed: "ذخیرهٔ پیوند دائمی ناموفق بود.",
+      perma_full: "در حال حاضر پیوندهای اشتراکیِ فعال زیادی وجود دارد — بعداً دوباره تلاش کنید.",
+      report_not_found: "این گزارش پیدا نشد یا منقضی شده است.",
+      report_unreadable: "این گزارشِ ذخیره‌شده قابل خواندن نیست.",
+      no_traceroute: "Traceroute روی این گره در دسترس نیست.",
+      origin_not_ip: "مبدأ باید یک نشانی IP باشد، مثلاً 93.184.215.14.",
+      origin_zone: "IP مبدأ نباید ناحیهٔ IPv6 (zone) داشته باشد.",
+      origin_private: "مبدأ باید یک نشانی IP عمومی باشد (نه خصوصی، محلی یا رزروشده).",
+      domain_empty: "لطفاً نام دامنه را وارد کنید.",
+      domain_ip: "نشانی IP پشتیبانی نمی‌شود — نام دامنه‌ای مانند example.com وارد کنید.",
+      domain_local: "نام‌های محلی یا رزروشده (مانند localhost و ‎.local و ‎.internal) قابل بررسی نیستند.",
+      domain_invalid: "این یک نام دامنهٔ معتبر به نظر نمی‌رسد.",
+      domain_no_tld: "دامنه را کامل و همراه پسوندش وارد کنید، مثلاً example.com.",
+      domain_public_suffix: "این یک پسوند عمومی (مانند TLD) است، نه دامنه‌ای که بتوان ثبت کرد.",
+      network: "اتصال به سرور برقرار نشد. اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.",
+      http: "سرور خطا برگرداند. دوباره تلاش کنید.",
     },
   },
 };
@@ -225,12 +303,34 @@ function renderNodes() {
 
 // ---------- API ----------
 
+// APIError carries the server's stable error code so the message can be shown
+// in the page language; the English server text is kept as a fallback.
+class APIError extends Error {
+  constructor(code, message) { super(message || code); this.code = code; }
+}
+
 async function api(path, opts) {
-  const resp = await fetch(path, opts);
+  // X-Error-Envelope: the CDN in front of the site replaces 4xx/5xx responses
+  // with its own page, so the server sends API errors as 200 + {error, code}.
+  const o = Object.assign({}, opts);
+  o.headers = Object.assign({ "X-Error-Envelope": "1" }, o.headers || {});
+  let resp;
+  try { resp = await fetch(path, o); } catch (_) { throw new APIError("network"); }
   const ct = resp.headers.get("Content-Type") || "";
-  const body = ct.includes("json") ? await resp.json() : await resp.text();
-  if (!resp.ok) throw new Error((body && body.error) || "HTTP " + resp.status);
+  const body = ct.includes("json") ? await resp.json().catch(() => null) : await resp.text();
+  const failed = !resp.ok || resp.headers.get("X-Api-Status") || (body && typeof body === "object" && body.error && body.code);
+  if (failed) throw new APIError((body && body.code) || "http", body && body.error);
   return body;
+}
+// errText turns an error into a message in the current language.
+function errText(e) {
+  if (!e) return "";
+  if (e.code) {
+    if (lang === "en" && e.message && e.message !== e.code) return e.message; // server text has the detail
+    const t = T("err." + e.code);
+    if (t !== "err." + e.code) return t;
+  }
+  return e.message || T("err.http");
 }
 function showError(msg) { $("error").textContent = msg || ""; $("error").hidden = !msg; }
 function banner(msg) { $("banner").textContent = msg || ""; $("banner").hidden = !msg; }
@@ -376,7 +476,7 @@ function detailsFor(layer, r) {
           { ltr: [false, true, true, true, true] }));
       }
     }
-  } catch (e) { body.push(el("p", { class: "alert", text: "Could not render details: " + e.message })); }
+  } catch (e) { body.push(el("p", { class: "alert", text: T("renderFailed") })); }
   if (r.skip_reason) body.push(el("p", {}, T("skipped") + ": ", el("span", { dir: "auto", text: r.skip_reason })));
   body.push(el("details", { class: "more" }, el("summary", {}, icon("i-chevron"), T("raw")), el("pre", { text: JSON.stringify(r, null, 2) })));
   return el("details", { class: "more" }, el("summary", {}, icon("i-chevron"), T("details")), el("div", { class: "detail-body" }, body));
@@ -515,7 +615,7 @@ function traceUI(targets) {
     es.addEventListener("error", (ev) => {
       es.close(); btn.disabled = false;
       let msg = T("traceFailed");
-      try { msg = JSON.parse(ev.data).error; } catch (_) { /* transport error */ }
+      try { const d = JSON.parse(ev.data); msg = errText(new APIError(d.code, d.error)); } catch (_) { /* transport error */ }
       render(msg);
     });
   });
@@ -611,7 +711,7 @@ function stream(id) {
     $("go").disabled = false;
     api(`/api/check/${id}`).then((rep) => {
       if (rep.status === "done") renderReport(rep); else { banner(T("lost")); setTimeout(() => stream(id), 2000); }
-    }).catch((e) => showError(e.message));
+    }).catch((e) => showError(errText(e)));
   };
 }
 
@@ -627,7 +727,7 @@ async function startCheck(domain) {
     history.pushState(null, "", "/c/" + r.request_id);
     stream(r.request_id);
     showResult(r.domain);
-  } catch (e) { showError(e.message); }
+  } catch (e) { showError(errText(e)); }
 }
 
 async function loadPermanent(id) {
@@ -636,7 +736,7 @@ async function loadPermanent(id) {
     current = { requestId: st.data.request_id, reportId: id, report: null, readOnly: true, es: null, layers: {} };
     renderReport(st.data);
     banner(fmt(T("reportBanner"), { t: new Date(st.captured_at).toLocaleString(lang === "fa" ? "fa-IR" : undefined) }));
-  } catch (e) { showError(e.message); setTitle(); }
+  } catch (e) { showError(errText(e)); setTitle(); }
 }
 
 async function copy(text) {
@@ -664,7 +764,7 @@ $("perma").addEventListener("click", async () => {
     const url = location.origin + r.url;
     await copy(url);
     banner(T("permaDone") + " " + url);
-  } catch (e) { showError(e.message); }
+  } catch (e) { showError(errText(e)); }
 });
 window.addEventListener("popstate", () => location.reload());
 

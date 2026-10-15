@@ -8,6 +8,13 @@ import (
 	"domaindoctor/internal/safenet"
 )
 
+// Origin-IP validation errors (the API maps them to stable error codes).
+var (
+	ErrOriginNotIP   = errors.New("originIp must be an IP address (for example 93.184.215.14)")
+	ErrOriginZone    = errors.New("originIp must not contain an IPv6 zone")
+	ErrOriginPrivate = errors.New("originIp must be a public address; private, loopback, link-local and metadata addresses are not allowed")
+)
+
 // ParseOriginIP validates a user-supplied origin address for the
 // origin-direct test: a literal public IP only (no host names; no private,
 // loopback, link-local, CGNAT, documentation or metadata addresses).
@@ -19,14 +26,14 @@ func ParseOriginIP(s string) (netip.Addr, error) {
 	}
 	a, err := netip.ParseAddr(strings.Trim(s, "[]"))
 	if err != nil {
-		return netip.Addr{}, errors.New("originIp must be an IP address (for example 93.184.215.14)")
+		return netip.Addr{}, ErrOriginNotIP
 	}
 	if a.Zone() != "" {
-		return netip.Addr{}, errors.New("originIp must not contain an IPv6 zone")
+		return netip.Addr{}, ErrOriginZone
 	}
 	a = a.Unmap()
 	if safenet.IsBlocked(a) {
-		return netip.Addr{}, errors.New("originIp must be a public address; private, loopback, link-local and metadata addresses are not allowed")
+		return netip.Addr{}, ErrOriginPrivate
 	}
 	return a, nil
 }

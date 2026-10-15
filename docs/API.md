@@ -1,7 +1,11 @@
 # API reference
 
 All master endpoints are served on `LISTEN_ADDR` (default `127.0.0.1:8082`) behind nginx.
-Errors are always JSON: `{"error": "<human-readable message>"}`. No error ever contains agent
+Errors are always JSON: `{"error": "<English message>", "code": "<stable code>"}`. The `code`
+(e.g. `domain_ip`, `rate_limited`, `check_not_found`, `origin_private`) is what clients should
+match on; the panel translates it (EN/FA). Requests with `X-Error-Envelope: 1` (the panel sends it)
+get API errors as `200` with the real status in `X-Api-Status`, because a CDN in front of the
+master may replace 4xx/5xx responses with its own HTML page; other clients get normal status codes. No error ever contains agent
 URLs, agent IPs, secrets or raw network errors from agents (they surface as `agent unreachable`).
 
 IDs (`request_id`, report `id`) are 40 lowercase hex characters (20 bytes from `crypto/rand`).

@@ -5,6 +5,8 @@ package api
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -115,23 +117,82 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/report", s.getReport)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { io.WriteString(w, "ok") })
 	if s.cfg.UI != nil {
-		files := http.FileServer(http.FS(s.cfg.UI))
+		files := http.StripPrefix("/static/", http.FileServer(http.FS(s.cfg.UI)))
+		page := versionedIndex(s.cfg.UI)
 		index := func(w http.ResponseWriter, r *http.Request) {
-			b, err := fs.ReadFile(s.cfg.UI, "index.html")
-			if err != nil {
+			if page == nil {
 				http.NotFound(w, r)
 				return
 			}
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			w.Write(b)
+			w.Header().Set("Cache-Control", "no-cache")
+			w.Write(page)
 		}
 		mux.HandleFunc("GET /{$}", index)
 		mux.HandleFunc("GET /r/{id}", index)
 		mux.HandleFunc("GET /c/{id}", index)
-		mux.Handle("GET /static/", http.StripPrefix("/static/", files))
+		mux.Handle("GET /static/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Versioned URLs (?v=<content hash>) never change, so a CDN may keep
+			// them; anything else is cached briefly.
+			if r.URL.Query().Get("v") != "" {
+				w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+			} else {
+				w.Header().Set("Cache-Control", "public, max-age=3600")
+			}
+			files.ServeHTTP(w, r)
+		}))
 	}
-	return securityHeaders(mux)
+	return securityHeaders(errorEnvelope(mux))
 }
+
+// versionedIndex returns index.html with ?v=<content hash> appended to the
+// app.js and style.css URLs, so a CDN that caches static files serves the new
+// ones as soon as a new master is deployed. nil if index.html is missing.
+func versionedIndex(ui fs.FS) []byte {
+	b, err := fs.ReadFile(ui, "index.html")
+	if err != nil {
+		return nil
+	}
+	page := string(b)
+	for _, name := range []string{"app.js", "style.css"} {
+		data, err := fs.ReadFile(ui, name)
+		if err != nil {
+			continue
+		}
+		sum := sha256.Sum256(data)
+		url := "/static/" + name
+		page = strings.ReplaceAll(page, `"`+url+`"`, `"`+url+"?v="+hex.EncodeToString(sum[:5])+`"`)
+	}
+	return []byte(page)
+}
+
+// EnvelopeHeader is sent by the UI on its API calls. CDNs in front of the
+// master (ParsPack) replace any 4xx/5xx response with their own HTML error
+// page, so the UI could never show the real (translated) error. For requests
+// carrying this header, JSON error responses are sent as 200 with the real
+// status in X-Api-Status; every other client still gets normal status codes.
+const EnvelopeHeader = "X-Error-Envelope"
+
+func errorEnvelope(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get(EnvelopeHeader) == "1" && strings.HasPrefix(r.URL.Path, "/api/") {
+			w = &envelopeWriter{ResponseWriter: w}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+type envelopeWriter struct{ http.ResponseWriter }
+
+func (e *envelopeWriter) WriteHeader(code int) {
+	if code >= 400 && strings.HasPrefix(e.Header().Get("Content-Type"), "application/json") {
+		e.Header().Set("X-Api-Status", strconv.Itoa(code))
+		code = http.StatusOK
+	}
+	e.ResponseWriter.WriteHeader(code)
+}
+
+func (e *envelopeWriter) Unwrap() http.ResponseWriter { return e.ResponseWriter }
 
 func securityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -155,11 +216,67 @@ func writeJSON(w http.ResponseWriter, code int, v any) {
 	_ = enc.Encode(v)
 }
 
-func writeErr(w http.ResponseWriter, code int, msg string) {
-	writeJSON(w, code, map[string]string{"error": msg})
+// writeErr sends {"error": msg, "code": <stable code>}. The UI translates by
+// code (EN/FA STRINGS "err.<code>") and falls back to the English message.
+func writeErr(w http.ResponseWriter, status int, msg string) {
+	writeErrCode(w, status, errorCodes[msg], msg)
+}
+
+func writeErrCode(w http.ResponseWriter, status int, code, msg string) {
+	body := map[string]string{"error": msg}
+	if code != "" {
+		body["code"] = code
+	}
+	writeJSON(w, status, body)
 }
 
 const msgRateLimited = "rate limited — try again in a minute"
+
+// errorCodes maps every fixed error message to its stable code. A test checks
+// that each writeErr literal in this package has an entry, and app.js a string.
+var errorCodes = map[string]string{
+	"invalid request body": "invalid_body",
+	"invalid request id":   "invalid_id",
+	msgRateLimited:         "rate_limited",
+	"originIp is only accepted by /api/web-diagnose":                       "origin_not_allowed",
+	"a check from your address is already running — wait for it to finish": "check_running",
+	"the server is busy — please try again shortly":                        "busy",
+	"check not found or expired — please re-run it":                        "check_not_found",
+	"the check is still running":                                           "still_running",
+	"streaming unsupported":                                                "streaming_unsupported",
+	"too many open progress streams from your address":                     "too_many_streams",
+	"too many viewers for this check — use the JSON endpoint instead":      "too_many_viewers",
+	"run a check first; traceroute targets come from its results":          "no_check_for_trace",
+	"ip must be one of the addresses found by the check":                   "ip_not_in_check",
+	"unknown node":      "unknown_node",
+	"agent unreachable": "agent_unreachable",
+	"another request from your address is still running":                             "request_running",
+	"too many permanent links requested — try again later":                           "perma_rate_limited",
+	"permanent links are unavailable":                                                "perma_unavailable",
+	"this result is no longer available to make permanent — please re-run the check": "perma_expired",
+	"this report is too large to store as a permanent link":                          "report_too_large",
+	"failed to save permanent link":                                                  "perma_save_failed",
+	"too many active shared links right now — please try again later":                "perma_full",
+	"report not found or expired":                                                    "report_not_found",
+	"stored report is unreadable":                                                    "report_unreadable",
+	probe.ErrNoTraceroute.Error():                                                    "no_traceroute",
+	input.ErrOriginNotIP.Error():                                                     "origin_not_ip",
+	input.ErrOriginZone.Error():                                                      "origin_zone",
+	input.ErrOriginPrivate.Error():                                                   "origin_private",
+}
+
+// inputErrCode gives domain-normalization errors (some wrap a detail) a code.
+func inputErrCode(err error) string {
+	for code, e := range map[string]error{
+		"domain_empty": input.ErrEmpty, "domain_ip": input.ErrIP, "domain_local": input.ErrLocal,
+		"domain_invalid": input.ErrInvalid, "domain_no_tld": input.ErrNoTLD, "domain_public_suffix": input.ErrPublicSufix,
+	} {
+		if errors.Is(err, e) {
+			return code
+		}
+	}
+	return ""
+}
 
 // ---- checks ----
 
@@ -186,7 +303,7 @@ func (s *Server) start(w http.ResponseWriter, r *http.Request, allowOrigin bool)
 	}
 	d, err := input.Normalize(body.Domain)
 	if err != nil {
-		writeErr(w, http.StatusBadRequest, err.Error())
+		writeErrCode(w, http.StatusBadRequest, inputErrCode(err), err.Error())
 		return
 	}
 	var opts orchestrator.Options
@@ -443,7 +560,7 @@ func (s *Server) traceroute(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, probe.ErrNoTraceroute) || err.Error() == probe.ErrNoTraceroute.Error() {
 			msg = probe.ErrNoTraceroute.Error()
 		}
-		sseEvent(w, "error", map[string]string{"error": msg})
+		sseEvent(w, "error", map[string]string{"error": msg, "code": errorCodes[msg]})
 	} else {
 		sseEvent(w, "done", map[string]string{"status": "done"})
 	}
