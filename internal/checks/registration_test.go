@@ -42,6 +42,12 @@ func TestRegistration(t *testing.T) {
 		{"whois not found", &fakeReg{err: rdap.ErrNoService}, &fakeReg{err: rdap.ErrNotFound}, FAIL, true, []string{"reg.not_registered"}},
 		{"both fail", &fakeReg{err: errors.New("boom")}, &fakeReg{err: errors.New("bang")}, WARN, false, []string{"reg.lookup_failed"}},
 	}
+	// .ir: the lookup still runs; when it fails (data hidden) there is no warning.
+	ir, irWh := &fakeReg{err: rdap.ErrNoService}, &fakeReg{err: errors.New("bang")}
+	r := Registration(context.Background(), &State{Domain: "shop.example.ir", Apex: "example.ir"}, ir, irWh, now)
+	if r.Status != OK || r.Blocking || !r.Has("reg.not_published") || r.Has("reg.lookup_failed") || ir.n != 1 || irWh.n != 1 {
+		t.Errorf(".ir: status %s lookups %d/%d [%s]", r.Status, ir.n, irWh.n, codes(r))
+	}
 	for _, c := range cases {
 		st := &State{Domain: "example.com", Apex: "example.com"}
 		var wh RegLookup

@@ -23,6 +23,7 @@ later layer that depends on it (expired domain ⇒ NXDOMAIN ⇒ no A record ⇒ 
 | reg.pending_delete | `pending delete` | Cannot be restored; wait for drop and re-register. Cause. |
 | reg.client_hold / reg.server_hold | `client hold` / `server hold` | Registry removes NS from the zone. Client: registrar hold (unpaid, unverified WHOIS email, abuse) — contact registrar, verify contact email. Server: registry/legal hold — contact registrar. Cause. |
 | reg.lookup_failed | RDAP and WHOIS both failed | Informational WARN; continue checks. |
+| reg.not_published | `.ir` apex and the RDAP/WHOIS lookup failed (IRNIC has no RDAP; registrars hide data) | INFO instead of reg.lookup_failed, layer OK; expiry is checked in the IRNIC account. |
 
 ## Name servers (`ns.*`)
 | Code | Meaning | Fix |

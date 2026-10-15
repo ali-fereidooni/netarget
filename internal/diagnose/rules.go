@@ -24,6 +24,7 @@ var rules = map[string]Rule{
 	"reg.server_hold":    {"The registry put the domain on hold", "Contact your registrar to find out why the registry applied serverHold (legal, abuse, or policy issue) and what is required to lift it."},
 	"reg.inactive":       {"The registry shows no name servers for the domain", "Set at least two name servers for the domain at your registrar."},
 	"reg.lookup_failed":  {"Registration data could not be retrieved", "Usually a temporary RDAP/WHOIS problem; retry later. It does not affect the other checks."},
+	"reg.not_published":  {"The registry does not publish registration data", "Nothing to fix. For .ir domains, check the expiry date in your IRNIC account or at your reseller."},
 
 	// Name servers
 	"ns.checker_dns_blocked":   {"This checker cannot send DNS queries", "Not a problem with the domain. Run netarget (master or CLI) on a network that allows outbound UDP and TCP port 53 — e.g. a VPS — or ask your network administrator to allow it."},
