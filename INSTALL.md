@@ -90,6 +90,32 @@ For per-node secrets set `"secret_env": "AGENT_SECRET_THR1"` on that node in `no
 define `AGENT_SECRET_THR1=…` in `master.env`. Agents can read the secret from a file with
 `AGENT_SECRET_FILE`. Nothing secret goes into `nodes.json` or the repository.
 
+### TLS between master and agents
+
+Plain HTTP is fine on a private network. When the master reaches agents over the public
+internet, turn on TLS so the secret and probe results are encrypted. On each agent host:
+```bash
+sudo /usr/local/bin/domaindoctor-agent gen-cert -dir /etc/domaindoctor -hosts 203.0.113.10
+```
+```bash
+sudo chown root:domaindoctor /etc/domaindoctor/agent.key && sudo chmod 0640 /etc/domaindoctor/agent.key
+```
+It writes `agent.crt` (0644) and `agent.key` (0600; the chown/chmod lets the agent user read it),
+never overwrites existing files, and prints the `AGENT_TLS_CERT`/`AGENT_TLS_KEY` lines for
+`agent.env` and the `cert_sha256` value. `-hosts` only fills the SAN; pinning ignores names.
+The same with openssl:
+```bash
+openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -nodes -days 3650 -subj /CN=netarget-agent -keyout agent.key -out agent.crt
+```
+```bash
+openssl x509 -in agent.crt -noout -fingerprint -sha256
+```
+On the master, change that node's `url` to `https://…` and add `"cert_sha256": "<fingerprint>"`
+(64 hex digits; openssl's colon form is accepted too). Restart the agent first (it logs
+`TLS enabled, cert_sha256 …`, compare it with nodes.json), then the master. If the fingerprint
+does not match, the master refuses the connection and the node shows as dead. To rotate, generate
+a new cert, update `cert_sha256`, restart both. Expiry is not enforced for pinned certs.
+
 ## 4. Configuration (environment)
 
 ### Master
@@ -115,6 +141,7 @@ define `AGENT_SECRET_THR1=…` in `master.env`. Agents can read the secret from 
 |---|---|---|
 | `AGENT_LISTEN` | `127.0.0.1:9090` | bind address — use the **private** interface |
 | `AGENT_SECRET` / `AGENT_SECRET_FILE` | — | required, ≥ 32 chars |
+| `AGENT_TLS_CERT` / `AGENT_TLS_KEY` | — | PEM cert and key; both set = serve HTTPS (TLS 1.2+), unset = plain HTTP |
 
 ## 5. Node registry
 
@@ -123,16 +150,20 @@ define `AGENT_SECRET_THR1=…` in `master.env`. Agents can read the secret from 
 {
   "nodes": [
     {"id": "fra1", "name": "Frankfurt — Hetzner", "location": "DE", "url": "http://10.0.0.2:9090"},
-    {"id": "thr1", "name": "Tehran — ISP", "location": "IR", "url": "http://10.0.0.3:9090", "secret_env": "AGENT_SECRET_THR1"}
+    {"id": "thr1", "name": "Tehran — ISP", "location": "IR", "url": "http://10.0.0.3:9090", "secret_env": "AGENT_SECRET_THR1"},
+    {"id": "ams1", "name": "Amsterdam", "location": "NL", "url": "https://203.0.113.20:9443", "secret_env": "AGENT_SECRET_AMS1",
+     "cert_sha256": "REPLACE_WITH_64_HEX_FINGERPRINT"}
   ]
 }
 ```
-`id`: `[a-z0-9-]`, unique. `url` must be the private address. Only `id`, `name`, `location` are
+`id`: `[a-z0-9-]`, unique. `url` is the private address, or an `https://` public address with
+`cert_sha256` (see "TLS between master and agents"). Only `id`, `name`, `location` are
 ever shown to users. Restart the master after editing.
 
 ## 6. Firewall (ufw) on agents
 
-The agent port must only accept the master's private address:
+The agent port must only accept the master's address (private, or its public IP when agents use
+TLS over the internet; TLS encrypts the traffic but the firewall is still what keeps others out):
 ```bash
 sudo ufw default deny incoming
 sudo ufw allow OpenSSH

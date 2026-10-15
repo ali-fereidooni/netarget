@@ -2,8 +2,13 @@ package nodes
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"net/netip"
 	"os"
 	"path/filepath"
@@ -117,5 +122,51 @@ func TestLoadAndPublicMetadata(t *testing.T) {
 	os.WriteFile(p, []byte(`{"nodes":[{"id":"../x","url":"http://a"}]}`), 0o600)
 	if _, err := Load(p, func(k string) string { return env[k] }); err == nil {
 		t.Fatal("bad id accepted")
+	}
+}
+
+// TestLoadTLSPinning runs real health checks through Load-built clients:
+// plain http, https with the right pin, and https with a wrong pin.
+func TestLoadTLSPinning(t *testing.T) {
+	ok := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "ok") })
+	plain := httptest.NewServer(ok)
+	defer plain.Close()
+	tlsSrv := httptest.NewTLSServer(ok)
+	defer tlsSrv.Close()
+	sum := sha256.Sum256(tlsSrv.Certificate().Raw)
+	pin := hex.EncodeToString(sum[:])
+
+	dir := t.TempDir()
+	p := filepath.Join(dir, "nodes.json")
+	write := func(nodes ...map[string]string) {
+		b, _ := json.Marshal(map[string]any{"nodes": nodes})
+		os.WriteFile(p, b, 0o600)
+	}
+	env := func(string) string { return strings.Repeat("a", 64) }
+
+	write(
+		map[string]string{"id": "plain", "url": plain.URL},
+		map[string]string{"id": "pinned", "url": tlsSrv.URL, "cert_sha256": strings.ToUpper(pin)},
+		map[string]string{"id": "wrong", "url": tlsSrv.URL, "cert_sha256": strings.Repeat("0", 64)},
+	)
+	reg, err := Load(p, env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	reg.CheckOnce(ctx, 2*time.Second)
+	reg.CheckOnce(ctx, 2*time.Second)
+	if !reg.IsLive("plain") || !reg.IsLive("pinned") || reg.IsLive("wrong") {
+		t.Fatalf("live: plain=%v pinned=%v wrong=%v", reg.IsLive("plain"), reg.IsLive("pinned"), reg.IsLive("wrong"))
+	}
+
+	for name, n := range map[string]map[string]string{
+		"pin on http": {"id": "x", "url": plain.URL, "cert_sha256": pin},
+		"short pin":   {"id": "x", "url": tlsSrv.URL, "cert_sha256": pin[:10]},
+	} {
+		write(n)
+		if _, err := Load(p, env); err == nil {
+			t.Errorf("%s accepted", name)
+		}
 	}
 }

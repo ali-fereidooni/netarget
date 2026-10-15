@@ -12,6 +12,14 @@
       "location": "IR",
       "url": "http://10.0.0.3:9090",
       "secret_env": "AGENT_SECRET_THR1"
+    },
+    {
+      "id": "ams1",
+      "name": "Amsterdam",
+      "location": "NL",
+      "url": "https://203.0.113.20:9443",
+      "secret_env": "AGENT_SECRET_AMS1",
+      "cert_sha256": "REPLACE_WITH_64_HEX_FINGERPRINT"
     }
   ]
 }

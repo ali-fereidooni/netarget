@@ -11,7 +11,7 @@ copied from it (it is AGPL-3.0); everything here is an independent implementatio
                        │   DNS/RDAP/WHOIS lookups (direct)     │
                        │   optional in-process local agent     │
                        └───────────────┬──────────────────────┘
-                                       │ HTTP + X-Agent-Secret (private network)
+                                       │ HTTP(S) + X-Agent-Secret (cert pinned)
                       ┌────────────────┼─────────────────┐
                       ▼                ▼                 ▼
                  agent :9090      agent :9090       agent :9090
@@ -136,8 +136,17 @@ its reports are in `docs/demo/load/`.
 
 ## Master ↔ agent
 
-- HTTP with `X-Agent-Secret` (32-byte random hex, constant-time compare) over private networking;
-  the agent port is restricted to the master by ufw.
+- `X-Agent-Secret` (32-byte random hex, constant-time compare) on every request; the agent port
+  is restricted to the master by ufw.
+- Transport: plain HTTP on a private network, or HTTPS (TLS 1.2+, `AGENT_TLS_CERT`/`AGENT_TLS_KEY`)
+  when master and agent talk over the public internet, so on-path observers see neither the
+  secret nor probe results. Agents use self-signed ECDSA certs (`domaindoctor-agent gen-cert`); the
+  master trusts each by the SHA-256 of its leaf certificate (`cert_sha256` per node) instead of a
+  CA, checked in `tls.Config.VerifyConnection` so resumed sessions are checked too. Chain, name and
+  expiry are not checked when pinned: the pin is the trust anchor, rotation means a new pin. A
+  mismatch fails the handshake, so nothing is sent and the node is marked dead like any other
+  failure. `cert_sha256` on an `http://` URL is a config error, not silently ignored. An `https://`
+  node without a pin uses normal system-root verification.
 - Clients only ever see `id`, `name`, `location` of nodes. All agent failures map to the fixed
   string `agent unreachable`.
 - **Single-node mode**: with no `NODES_FILE` (or `LOCAL_AGENT=1`) the master adds an in-process
@@ -190,7 +199,8 @@ owns a whole /64, so per-address limits would be trivial to rotate around).
   mapped to a fixed vocabulary (`timeout`, `connection refused`, …).
 - Traceroute hops in private/CGNAT ranges are shown as "(private address hidden)".
 - The master→agent client ignores proxy environment variables and never follows redirects (a
-  redirect would carry `X-Agent-Secret` elsewhere).
+  redirect would carry `X-Agent-Secret` elsewhere). With `cert_sha256` set it talks only to the
+  agent holding that certificate's key.
 
 ### Known limitation
 

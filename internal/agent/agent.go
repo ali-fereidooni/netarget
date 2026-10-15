@@ -1,6 +1,8 @@
 // Package agent is the measurement-node HTTP API (server) and the master's
 // client for it. Every request carries X-Agent-Secret; the agent re-validates
 // all targets itself (pinned IPs must be public) rather than trusting the master.
+// Over the public internet the agent serves HTTPS and the client pins its
+// self-signed certificate by SHA-256 (tls.go).
 package agent
 
 import (
@@ -157,10 +159,21 @@ type Client struct {
 	Stream  *http.Client // traceroute (long-lived)
 }
 
+// NewClient returns a client for an http:// agent, or an https:// agent with a
+// publicly trusted certificate.
 func NewClient(baseURL, secret string, timeout time.Duration) *Client {
+	return NewPinnedClient(baseURL, secret, nil, timeout)
+}
+
+// NewPinnedClient is NewClient with the agent's TLS certificate pinned to the
+// SHA-256 fingerprint pin (see ParseFingerprint). A mismatch fails the
+// handshake, which surfaces as ErrUnreachable like every other failure.
+// Callers must pair a pin with an https:// URL (nodes.Load enforces it).
+func NewPinnedClient(baseURL, secret string, pin []byte, timeout time.Duration) *Client {
 	// No proxies from the environment and no redirects: a redirect would
 	// carry X-Agent-Secret to wherever the response points.
-	tr := &http.Transport{Proxy: nil, MaxIdleConnsPerHost: 8, IdleConnTimeout: 60 * time.Second}
+	tr := &http.Transport{Proxy: nil, MaxIdleConnsPerHost: 8, IdleConnTimeout: 60 * time.Second,
+		TLSClientConfig: clientTLSConfig(pin), TLSHandshakeTimeout: 10 * time.Second}
 	noRedirect := func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 	return &Client{
 		BaseURL: strings.TrimRight(baseURL, "/"), Secret: secret,

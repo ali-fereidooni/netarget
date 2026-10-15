@@ -40,6 +40,9 @@ type fileNode struct {
 	Location  string `json:"location"`
 	URL       string `json:"url"`
 	SecretEnv string `json:"secret_env,omitempty"` // env var holding this node's secret; default AGENT_SECRET
+	// CertSHA256 pins an https agent's (self-signed) certificate. Not a
+	// secret: it is the public cert's fingerprint.
+	CertSHA256 string `json:"cert_sha256,omitempty"`
 }
 
 type liveness struct {
@@ -97,6 +100,17 @@ func Load(path string, getenv func(string) string) (*Registry, error) {
 		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
 			return nil, fmt.Errorf("nodes file: node %s has an invalid url", fn.ID)
 		}
+		var pin []byte
+		if fn.CertSHA256 != "" {
+			// A pin on an http:// URL would be silently ignored and the
+			// secret would still travel in clear text.
+			if u.Scheme != "https" {
+				return nil, fmt.Errorf("nodes file: node %s: cert_sha256 needs an https:// url", fn.ID)
+			}
+			if pin, err = agent.ParseFingerprint(fn.CertSHA256); err != nil {
+				return nil, fmt.Errorf("nodes file: node %s: %v", fn.ID, err)
+			}
+		}
 		env := fn.SecretEnv
 		if env == "" {
 			env = "AGENT_SECRET"
@@ -109,8 +123,8 @@ func Load(path string, getenv func(string) string) (*Registry, error) {
 			fn.Name = fn.ID
 		}
 		n := &Node{ID: fn.ID, Name: fn.Name, Location: fn.Location,
-			P:      agent.NewClient(fn.URL, secret, 45*time.Second),
-			health: agent.NewClient(fn.URL, secret, 3*time.Second),
+			P:      agent.NewPinnedClient(fn.URL, secret, pin, 45*time.Second),
+			health: agent.NewPinnedClient(fn.URL, secret, pin, 3*time.Second),
 		}
 		ns = append(ns, n)
 	}

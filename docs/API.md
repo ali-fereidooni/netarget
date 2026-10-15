@@ -231,6 +231,10 @@ The permanent ID is freshly generated (not the request ID).
 ## Agent API (master → agent only)
 
 Every request needs `X-Agent-Secret: <secret>` (constant-time compare; 401 otherwise).
+The agent serves plain HTTP by default, or HTTPS (TLS 1.2+) when `AGENT_TLS_CERT` and
+`AGENT_TLS_KEY` are set; over the public internet use HTTPS. The master pins an HTTPS agent's
+self-signed certificate by SHA-256 (`cert_sha256` in `nodes.json`) and drops the connection on a
+mismatch before any request (or the secret) is sent.
 The agent re-validates everything it receives and refuses non-public IPs itself.
 Errors are `400 {"error":"invalid request"}` without detail.
 
