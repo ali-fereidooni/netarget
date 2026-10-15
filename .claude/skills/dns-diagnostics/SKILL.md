@@ -1,11 +1,11 @@
 ---
 name: dns-diagnostics
-description: Failure-to-fix knowledge for domain troubleshooting (registration, delegation, DNS zone, email auth, DNSSEC, reachability, HTTP/TLS). Use when adding or changing a Domain Doctor finding code, writing diagnosis rules or fix text, or explaining a check result.
+description: Failure-to-fix knowledge for domain troubleshooting (registration, delegation, DNS zone, email auth, DNSSEC, reachability, HTTP/TLS). Use when adding or changing a netarget finding code, writing diagnosis rules or fix text, or explaining a check result.
 ---
 
 # DNS diagnostics knowledge base
 
-Each finding in Domain Doctor has a stable code. When you add one: add the detection in
+Each finding in netarget has a stable code. When you add one: add the detection in
 `internal/checks`, a rule in `internal/diagnose/rules.go` (cause or symptom, priority, fix text),
 and a row here. Causes explain later failures; symptoms are explained by an earlier cause.
 

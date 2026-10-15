@@ -231,7 +231,7 @@ func TestPromoteAndReport(t *testing.T) {
 	if code != 200 || !strings.Contains(body, `"kind":"check"`) || !strings.Contains(body, "reg.not_registered") {
 		t.Fatalf("report: %d %s", code, body)
 	}
-	if code, md := get(t, ts.URL+"/api/report?id="+rid+"&format=md"); code != 200 || !strings.Contains(md, "# Domain Doctor report") {
+	if code, md := get(t, ts.URL+"/api/report?id="+rid+"&format=md"); code != 200 || !strings.Contains(md, "# netarget report") {
 		t.Fatalf("report md: %d", code)
 	}
 	if code, _ := get(t, ts.URL+"/api/report?id=../../etc/passwd"); code != 404 {

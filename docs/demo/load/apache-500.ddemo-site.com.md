@@ -1,4 +1,4 @@
-# Domain Doctor report: apache-500.ddemo-site.com
+# netarget report: apache-500.ddemo-site.com
 
 - Checked: 2026-10-15 01:28:06 UTC
 - Request ID: `953719a6ee09dd72a3e01e44758e5c0777228436`

@@ -1,6 +1,6 @@
 # Architecture
 
-Domain Doctor's deployment design (master/agent split, liveness, SSE, report storage, security
+netarget's deployment design (master/agent split, liveness, SSE, report storage, security
 layers) is modelled on [komyl/looking-glass](https://github.com/komyl/looking-glass). No code was
 copied from it (it is AGPL-3.0); everything here is an independent implementation.
 

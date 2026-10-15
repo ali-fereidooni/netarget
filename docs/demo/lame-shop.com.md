@@ -1,4 +1,4 @@
-# Domain Doctor report: lame-shop.com
+# netarget report: lame-shop.com
 
 - Checked: 2026-10-15 01:28:05 UTC
 - Request ID: `4d61783049504a1381667064f871ffb34e709470`

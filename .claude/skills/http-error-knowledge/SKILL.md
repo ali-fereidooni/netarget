@@ -1,6 +1,6 @@
 ---
 name: http-error-knowledge
-description: How to add, change and test Website Load knowledge-base rules (rules/kb/*.yaml) and fingerprints (rules/fingerprints.yaml) in Domain Doctor — schema, conditions, signals, confidence, safe-advice rules and fixtures. Use whenever a website/HTTP/CDN/TLS failure is misdiagnosed, a new error page or CDN must be recognised, or fix advice needs to change.
+description: How to add, change and test Website Load knowledge-base rules (rules/kb/*.yaml) and fingerprints (rules/fingerprints.yaml) in netarget — schema, conditions, signals, confidence, safe-advice rules and fixtures. Use whenever a website/HTTP/CDN/TLS failure is misdiagnosed, a new error page or CDN must be recognised, or fix advice needs to change.
 ---
 
 # Website Load knowledge base

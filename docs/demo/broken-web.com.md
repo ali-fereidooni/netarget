@@ -1,4 +1,4 @@
-# Domain Doctor report: broken-web.com
+# netarget report: broken-web.com
 
 - Checked: 2026-10-15 01:28:06 UTC
 - Request ID: `5cda6b21c8a9db698932ece3dbeef0104829246f`
@@ -9,7 +9,7 @@
 **Expired TLS certificate**
 
 - Root cause (web): The TLS certificate for broken-web.com has expired; browsers show a security warning instead of the site
-- Evidence: `certificate expired 2026-10-12 (issuer Domain Doctor Demo CA)`
+- Evidence: `certificate expired 2026-10-12 (issuer netarget Demo CA)`
 - Also a cause (web): nginx cannot get a response from the application behind it (502 Bad Gateway)
 
 ### Fixes (in priority order)
@@ -64,7 +64,7 @@
 
 ### ❌ Website load — FAIL
 
-- **FAIL** `load.tls.expired` The TLS certificate for broken-web.com has expired; browsers show a security warning instead of the site (`certificate expired 2026-10-12 (issuer Domain Doctor Demo CA)`)
+- **FAIL** `load.tls.expired` The TLS certificate for broken-web.com has expired; browsers show a security warning instead of the site (`certificate expired 2026-10-12 (issuer netarget Demo CA)`)
 - **FAIL** `load.http.502.origin` nginx cannot get a response from the application behind it (502 Bad Gateway) (`HTTP 502 on GET https://broken-web.com/ (browser UA); no CDN or WAF detected in front of the site; web server detected: nginx (nginx in front of an application (PHP-FPM, Node, Gunicorn…))`)
 - **INFO** `load.content.no-http2` The server only speaks HTTP/1.1; HTTP/2 would load pages with many resources faster (`the server negotiated HTTP/1.1 when HTTP/2 was offered`)
 
@@ -74,7 +74,7 @@
 
 Evidence:
 
-- `certificate expired 2026-10-12 (issuer Domain Doctor Demo CA)`
+- `certificate expired 2026-10-12 (issuer netarget Demo CA)`
 
 Likely causes:
 

@@ -1,4 +1,4 @@
-# Domain Doctor report: cdn-loop.ddemo-site.com
+# netarget report: cdn-loop.ddemo-site.com
 
 - Checked: 2026-10-15 01:28:07 UTC
 - Request ID: `0ca49ef589f35ec114200847b692efe9fbd386a5`

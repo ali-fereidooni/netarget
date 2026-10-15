@@ -1,4 +1,4 @@
-# Product: Domain Doctor
+# Product: netarget
 
 **What it is.** A troubleshooting tool: enter a domain, it checks registration → name servers →
 DNS zone → reachability → web server, stops at the layer that fails, names the root cause, and

@@ -1,4 +1,4 @@
-# Domain Doctor report: healthy.ddemo-site.com
+# netarget report: healthy.ddemo-site.com
 
 - Checked: 2026-10-15 01:28:06 UTC
 - Request ID: `fff0c83b2df76046a3723f315159fe91f005d16a`

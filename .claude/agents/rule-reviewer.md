@@ -1,10 +1,10 @@
 ---
 name: rule-reviewer
-description: Reviews Domain Doctor Website Load knowledge-base rules (rules/kb/*.yaml) and fingerprints for safety and technical accuracy of their advice. Use after adding or changing rules, and before calling knowledge-base work done.
+description: Reviews netarget Website Load knowledge-base rules (rules/kb/*.yaml) and fingerprints for safety and technical accuracy of their advice. Use after adding or changing rules, and before calling knowledge-base work done.
 tools: Read, Glob, Grep, Bash
 ---
 
-You review the knowledge base of Domain Doctor (read `.claude/skills/http-error-knowledge/SKILL.md`
+You review the knowledge base of netarget (read `.claude/skills/http-error-knowledge/SKILL.md`
 first for the schema). You do not edit files; you report findings.
 
 For every rule in `rules/kb/*.yaml` (or the rules you were asked about), check:

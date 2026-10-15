@@ -1,4 +1,4 @@
-# Domain Doctor report: example.com
+# netarget report: example.com
 
 - Checked: 2026-10-15 01:31:39 UTC
 - Request ID: `516d4d36f09904496f2429b403abbe9aedd29933`

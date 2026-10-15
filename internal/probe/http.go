@@ -56,7 +56,7 @@ func (p *HTTPProber) Run(ctx context.Context, req HTTPRequest) *HTTPResponse {
 // HopOpts are the per-request variations of the request matrix.
 type HopOpts struct {
 	Method   string     // GET (default) or HEAD
-	UA       string     // key in UserAgents; "" = DomainDoctor default
+	UA       string     // key in UserAgents; "" = netarget default
 	Proto    string     // auto (default), h1, h2
 	Compress *bool      // nil = default Go behaviour; true = gzip,deflate; false = identity
 	OriginIP netip.Addr // pin the start host to this address (origin-direct test)
@@ -235,7 +235,7 @@ func (p *HTTPProber) hop(ctx context.Context, rawURL string, pinned map[string][
 	if err != nil {
 		return fail("bad_url", "invalid URL")
 	}
-	ua := "DomainDoctor/1.0 (+web check)"
+	ua := "netarget/1.0 (+web check)"
 	if v, ok := UserAgents[o.UA]; ok && onSite {
 		ua = v
 	}

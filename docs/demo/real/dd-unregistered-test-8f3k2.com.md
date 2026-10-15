@@ -1,4 +1,4 @@
-# Domain Doctor report: dd-unregistered-test-8f3k2.com
+# netarget report: dd-unregistered-test-8f3k2.com
 
 - Checked: 2026-10-14 20:59:13 UTC
 - Request ID: `ec63fc5a9d191f1438bec06bed60f832cb94f9c9`

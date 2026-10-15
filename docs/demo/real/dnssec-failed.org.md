@@ -1,4 +1,4 @@
-# Domain Doctor report: dnssec-failed.org
+# netarget report: dnssec-failed.org
 
 - Checked: 2026-10-14 20:58:45 UTC
 - Request ID: `3470fd765168f559cbcff77b49995c4a2582c9d5`

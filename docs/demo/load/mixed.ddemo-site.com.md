@@ -1,4 +1,4 @@
-# Domain Doctor report: mixed.ddemo-site.com
+# netarget report: mixed.ddemo-site.com
 
 - Checked: 2026-10-15 01:28:06 UTC
 - Request ID: `fb931d19274b80da0e770de5daba78524aba4d69`

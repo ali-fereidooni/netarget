@@ -2,7 +2,7 @@
 #
 #   1. DEMO_CERTS=1 go test ./internal/e2e -run TestDemoCerts      # writes deploy/demo/certs/
 #   2. docker compose -f deploy/demo/docker-compose.demo.yml up -d
-#   3. DEMO_DOCKER=1 go test ./internal/e2e -run TestLoadDemo -v   # runs Domain Doctor against them
+#   3. DEMO_DOCKER=1 go test ./internal/e2e -run TestLoadDemo -v   # runs netarget against them
 #
 # Everything listens on 127.0.0.1 only. One edge nginx routes by host name
 # (*.ddemo-site.com) to Apache, an nginx origin, or a Caddy "fake CDN" that

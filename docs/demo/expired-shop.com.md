@@ -1,4 +1,4 @@
-# Domain Doctor report: expired-shop.com
+# netarget report: expired-shop.com
 
 - Checked: 2026-10-15 01:28:05 UTC
 - Request ID: `1476c2292fe05d4b49b874b2d2e9a5153fc4b9fc`

@@ -59,7 +59,7 @@ func (c *Client) getJSON(ctx context.Context, u string, v any) (int, error) {
 		return 0, err
 	}
 	req.Header.Set("Accept", "application/rdap+json, application/json")
-	req.Header.Set("User-Agent", "DomainDoctor/1.0")
+	req.Header.Set("User-Agent", "netarget/1.0")
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
 		return 0, err

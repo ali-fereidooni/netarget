@@ -19,7 +19,7 @@ func Markdown(rep *Report) string {
 	if rep.Domain.Unicode != "" && rep.Domain.Unicode != rep.Domain.Name {
 		name = fmt.Sprintf("%s (%s)", rep.Domain.Unicode, rep.Domain.Name)
 	}
-	w("# Domain Doctor report: %s\n\n", name)
+	w("# netarget report: %s\n\n", name)
 	w("- Checked: %s UTC\n- Request ID: `%s`\n", rep.StartedAt.Format("2006-01-02 15:04:05"), rep.ID)
 	if len(rep.Nodes) > 0 {
 		var ns []string

@@ -1,4 +1,4 @@
-# Domain Doctor — project conventions
+# netarget — project conventions
 
 Layered domain troubleshooter: registration → name servers → DNS zone → reachability → website load,
 with a cause-vs-symptom diagnosis engine. Master/agent design inspired by komyl/looking-glass

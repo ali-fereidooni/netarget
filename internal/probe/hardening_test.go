@@ -133,9 +133,9 @@ func TestResourcesThirdPartyHEADAndOffSitePage(t *testing.T) {
 func TestSameSite(t *testing.T) {
 	cases := map[[2]string]bool{
 		{"www.example.co.uk", "cdn.example.co.uk"}: true,
-		{"example.com", "example.com.evil.net"}:     false,
-		{"a.github.io", "b.github.io"}:              false, // public suffix
-		{"example.com", "EXAMPLE.com."}:             true,
+		{"example.com", "example.com.evil.net"}:    false,
+		{"a.github.io", "b.github.io"}:             false, // public suffix
+		{"example.com", "EXAMPLE.com."}:            true,
 	}
 	for c, want := range cases {
 		if got := SameSite(c[0], c[1]); got != want {

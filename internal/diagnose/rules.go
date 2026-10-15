@@ -26,7 +26,7 @@ var rules = map[string]Rule{
 	"reg.lookup_failed":  {"Registration data could not be retrieved", "Usually a temporary RDAP/WHOIS problem; retry later. It does not affect the other checks."},
 
 	// Name servers
-	"ns.checker_dns_blocked":   {"This checker cannot send DNS queries", "Not a problem with the domain. Run Domain Doctor (master or CLI) on a network that allows outbound UDP and TCP port 53 — e.g. a VPS — or ask your network administrator to allow it."},
+	"ns.checker_dns_blocked":   {"This checker cannot send DNS queries", "Not a problem with the domain. Run netarget (master or CLI) on a network that allows outbound UDP and TCP port 53 — e.g. a VPS — or ask your network administrator to allow it."},
 	"ns.parent_unreachable":    {"The TLD name servers could not be queried", "Retry later; if it persists from several networks the TLD may have an outage."},
 	"ns.no_delegation":         {"The domain is not delegated to any name servers", "Set the name servers at your registrar (the NS records your DNS provider gives you). If the domain is on hold or expired, fix that first."},
 	"ns.none_usable":           {"None of the domain's name servers answer for it", "Add the zone at your DNS provider so the listed name servers answer authoritatively, or change the name servers at the registrar to the ones that actually host the zone."},

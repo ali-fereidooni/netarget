@@ -1,4 +1,4 @@
-# Domain Doctor report: healthy-shop.com
+# netarget report: healthy-shop.com
 
 - Checked: 2026-10-15 01:28:05 UTC
 - Request ID: `e454bb075757f22f7e6488babec38d6cdcf22eb1`

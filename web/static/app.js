@@ -1,4 +1,4 @@
-// Domain Doctor panel. Server data is inserted with textContent only (never innerHTML).
+// netarget panel. Server data is inserted with textContent only (never innerHTML).
 "use strict";
 
 const LAYERS = ["registration", "nameservers", "zone", "reachability", "web"];
@@ -6,8 +6,8 @@ const LAYER_ICON = { registration: "i-id", nameservers: "i-servers", zone: "i-re
 
 const STRINGS = {
   en: {
-    tagline: "Domain troubleshooting", newCheck: "New check", recent: "Recent checks",
-    recentEmpty: "Checks you run in this browser appear here.", nodes: "Measurement nodes", noNodes: "No node is online.",
+    tagline: "Domain troubleshooting", newCheck: "New check",
+    nodes: "Measurement nodes", noNodes: "No node is online.",
     titleNew: "Check a domain", subNew: "Registration, name servers, DNS, reachability and the web server, in order.",
     titleResult: "Check result", titleReport: "Shared report",
     inputLabel: "Domain or URL", check: "Check", checking: "Checking…", try: "Try:",
@@ -58,8 +58,8 @@ const STRINGS = {
     },
   },
   fa: {
-    tagline: "عیب‌یابی دامنه", newCheck: "بررسی جدید", recent: "بررسی‌های اخیر",
-    recentEmpty: "بررسی‌هایی که در این مرورگر انجام می‌دهید اینجا نمایش داده می‌شوند.", nodes: "گره‌های اندازه‌گیری", noNodes: "هیچ گره‌ای آنلاین نیست.",
+    tagline: "عیب‌یابی دامنه", newCheck: "بررسی جدید",
+    nodes: "گره‌های اندازه‌گیری", noNodes: "هیچ گره‌ای آنلاین نیست.",
     titleNew: "بررسی دامنه", subNew: "ثبت دامنه، نیم‌سرورها، DNS، دسترس‌پذیری و وب‌سرور، به ترتیب.",
     titleResult: "نتیجهٔ بررسی", titleReport: "گزارش اشتراکی",
     inputLabel: "دامنه یا آدرس", check: "بررسی", checking: "در حال بررسی…", try: "امتحان کنید:",
@@ -120,6 +120,8 @@ const store = {
 let lang = store.get("dd.lang", "en") === "fa" ? "fa" : "en";
 let current = { requestId: null, reportId: null, report: null, readOnly: false, es: null, layers: {} };
 let nodeCache = [];
+// The sidebar no longer lists recent checks; drop what older versions stored.
+try { localStorage.removeItem("dd.recent"); } catch (_) { /* private mode */ }
 
 function T(key) {
   const parts = key.split(".");
@@ -179,7 +181,6 @@ function applyLang() {
   document.querySelectorAll("[data-lang]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
   renderIntro();
   renderNodes();
-  renderRecent();
   setTitle();
   updateThemeLabel();
   if (current.report) renderReport(current.report);
@@ -208,7 +209,7 @@ function renderIntro() {
   $("intro-steps").replaceChildren(...LAYERS.map((l) => el("li", {}, icon(LAYER_ICON[l]), el("strong", { text: T("layer." + l) }), el("span", { text: T("layerHelp." + l) }))));
 }
 
-// ---------- sidebar: nodes and recent checks ----------
+// ---------- sidebar: nodes ----------
 
 async function loadNodes() {
   try { nodeCache = await api("/api/nodes"); } catch (_) { nodeCache = []; }
@@ -220,30 +221,6 @@ function renderNodes() {
   if (!nodeCache.length) { ul.replaceChildren(el("li", {}, el("span", { class: "node" }, el("span", { class: "dot" }), el("span", { text: T("noNodes") })))); return; }
   ul.replaceChildren(...nodeCache.map((n) => el("li", {}, el("span", { class: "node" },
     el("span", { class: "dot live" }), el("span", { class: "name", text: n.name }), el("span", { class: "sub", text: n.location })))));
-}
-
-function recentList() { return store.get("dd.recent", []).filter((r) => r && /^[0-9a-f]{40}$/.test(r.id)); }
-function remember(entry) {
-  const list = recentList().filter((r) => r.id !== entry.id);
-  list.unshift(entry);
-  store.set("dd.recent", list.slice(0, 8));
-  renderRecent();
-}
-function updateRecent(id, status) {
-  const list = recentList();
-  const r = list.find((x) => x.id === id);
-  if (r) { r.status = status; store.set("dd.recent", list); renderRecent(); }
-}
-function renderRecent() {
-  const list = recentList();
-  $("recent-empty").hidden = list.length > 0;
-  $("recent").replaceChildren(...list.map((r) => {
-    const href = r.perma ? "/r/" + r.id : "/c/" + r.id;
-    const cur = r.id === current.requestId || r.id === current.reportId;
-    const when = new Date(r.t).toLocaleTimeString(lang === "fa" ? "fa-IR" : undefined, { hour: "2-digit", minute: "2-digit" });
-    return el("li", {}, el("a", { href, "aria-current": cur ? "page" : null },
-      el("span", { class: "dot " + (r.status || "") }), el("span", { class: "name", text: r.domain }), el("span", { class: "sub", text: when })));
-  }));
 }
 
 // ---------- API ----------
@@ -608,7 +585,6 @@ function renderReport(rep) {
   LAYERS.forEach((l) => setCard(l, byLayer[l] || { status: "PENDING" }));
   renderDiagnosis(rep);
   setExports();
-  renderRecent();
 }
 
 function stream(id) {
@@ -629,13 +605,12 @@ function stream(id) {
     $("go").disabled = false;
     const rep = JSON.parse(ev.data).report;
     renderReport(rep);
-    updateRecent(id, overallClass(rep));
   });
   es.onerror = () => {
     es.close();
     $("go").disabled = false;
     api(`/api/check/${id}`).then((rep) => {
-      if (rep.status === "done") { renderReport(rep); updateRecent(id, overallClass(rep)); } else { banner(T("lost")); setTimeout(() => stream(id), 2000); }
+      if (rep.status === "done") renderReport(rep); else { banner(T("lost")); setTimeout(() => stream(id), 2000); }
     }).catch((e) => showError(e.message));
   };
 }
@@ -650,7 +625,6 @@ async function startCheck(domain) {
     const payload = originIp ? { domain, originIp } : { domain };
     const r = await api(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     history.pushState(null, "", "/c/" + r.request_id);
-    remember({ id: r.request_id, domain: r.domain.name, t: Date.now(), status: "" });
     stream(r.request_id);
     showResult(r.domain);
   } catch (e) { showError(e.message); }
@@ -689,7 +663,6 @@ $("perma").addEventListener("click", async () => {
     const r = await api("/api/report/promote", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ request_id: current.requestId }) });
     const url = location.origin + r.url;
     await copy(url);
-    remember({ id: r.id, domain: current.report.domain.name, t: Date.now(), status: overallClass(current.report), perma: true });
     banner(T("permaDone") + " " + url);
   } catch (e) { showError(e.message); }
 });

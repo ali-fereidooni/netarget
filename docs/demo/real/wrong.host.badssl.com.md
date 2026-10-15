@@ -1,4 +1,4 @@
-# Domain Doctor report: wrong.host.badssl.com
+# netarget report: wrong.host.badssl.com
 
 - Checked: 2026-10-15 01:32:26 UTC
 - Request ID: `67bf7be79ebb588c11d2ff99f8e0b65222f58862`

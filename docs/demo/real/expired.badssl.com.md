@@ -1,4 +1,4 @@
-# Domain Doctor report: expired.badssl.com
+# netarget report: expired.badssl.com
 
 - Checked: 2026-10-15 01:32:06 UTC
 - Request ID: `2125b3671f24d896cd12e778cf905c58393d51da`

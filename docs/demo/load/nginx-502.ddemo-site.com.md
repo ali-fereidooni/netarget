@@ -1,4 +1,4 @@
-# Domain Doctor report: nginx-502.ddemo-site.com
+# netarget report: nginx-502.ddemo-site.com
 
 - Checked: 2026-10-15 01:28:06 UTC
 - Request ID: `e37ecaaf69026376255ecf25967e95d1c80e7b45`

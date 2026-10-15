@@ -1,4 +1,4 @@
-# Installing Domain Doctor
+# Installing netarget
 
 Two binaries: **master** (UI + API + DNS/RDAP lookups, embeds the web UI) and **agent**
 (runs on each measurement node). Plus the **domaindoctor** CLI.

@@ -262,7 +262,7 @@ func (s *Server) getCheck(w http.ResponseWriter, r *http.Request) {
 		writeMarkdown(w, rep, q.Get("download") == "1")
 	default:
 		if q.Get("download") == "1" {
-			w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="domaindoctor-%s.json"`, rep.Domain.Name))
+			w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="netarget-%s.json"`, rep.Domain.Name))
 		}
 		writeJSON(w, http.StatusOK, rep)
 	}
@@ -271,7 +271,7 @@ func (s *Server) getCheck(w http.ResponseWriter, r *http.Request) {
 func writeMarkdown(w http.ResponseWriter, rep *orchestrator.Report, download bool) {
 	w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
 	if download {
-		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="domaindoctor-%s.md"`, rep.Domain.Name))
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="netarget-%s.md"`, rep.Domain.Name))
 	}
 	io.WriteString(w, orchestrator.Markdown(rep))
 }

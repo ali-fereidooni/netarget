@@ -1,6 +1,6 @@
-# Domain Doctor
+# netarget
 
-Enter a domain; Domain Doctor checks it layer by layer —
+Enter a domain; netarget checks it layer by layer —
 **registration → name servers → DNS zone → reachability → website load** — stops to explain the
 root cause when a layer fails, separates causes from symptoms, and gives a prioritized fix list.
 

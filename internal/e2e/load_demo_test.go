@@ -64,7 +64,7 @@ func TestDemoCerts(t *testing.T) {
 		t.Fatal(err)
 	}
 	caKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	caTpl := &x509.Certificate{SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "Domain Doctor Demo CA"},
+	caTpl := &x509.Certificate{SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "netarget Demo CA"},
 		NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(365 * 24 * time.Hour), IsCA: true, BasicConstraintsValid: true, KeyUsage: x509.KeyUsageCertSign}
 	caDER, err := x509.CreateCertificate(rand.Reader, caTpl, caTpl, &caKey.PublicKey, caKey)
 	if err != nil {

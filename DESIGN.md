@@ -1,4 +1,4 @@
-# Design system: Domain Doctor panel
+# Design system: netarget panel
 
 Modelled on the ParsPack client panel. Tokens live in `web/static/style.css` (`:root` = dark,
 `[data-theme=light]` = light). Everything references tokens.

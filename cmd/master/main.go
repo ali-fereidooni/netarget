@@ -1,4 +1,4 @@
-// Command master serves the Domain Doctor web UI and API and orchestrates
+// Command master serves the netarget web UI and API and orchestrates
 // checks across measurement agents. Configuration is via environment
 // variables; see INSTALL.md.
 package main

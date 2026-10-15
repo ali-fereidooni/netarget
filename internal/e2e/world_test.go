@@ -267,7 +267,7 @@ func signZone(t testing.TB, z *dnstest.Zone, now time.Time) dns.RR {
 
 func newCA(t testing.TB) (*x509.Certificate, *ecdsa.PrivateKey, *x509.CertPool) {
 	k, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	tpl := &x509.Certificate{SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "Domain Doctor Demo CA"},
+	tpl := &x509.Certificate{SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "netarget Demo CA"},
 		NotBefore: time.Now().Add(-365 * 24 * time.Hour), NotAfter: time.Now().Add(365 * 24 * time.Hour),
 		IsCA: true, BasicConstraintsValid: true, KeyUsage: x509.KeyUsageCertSign}
 	der, err := x509.CreateCertificate(rand.Reader, tpl, tpl, &k.PublicKey, k)

@@ -1,5 +1,5 @@
 ---
-description: Run Domain Doctor's CLI against a domain and explain the diagnosis
+description: Run netarget's CLI against a domain and explain the diagnosis
 argument-hint: <domain>
 ---
 
