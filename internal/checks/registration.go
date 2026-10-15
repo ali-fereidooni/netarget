@@ -51,13 +51,6 @@ func Registration(ctx context.Context, st *State, rd, wh RegLookup, now time.Tim
 			"registry lookup returned \"not found\"")
 		r.Blocking = true
 		return r.Finish("Domain is not registered")
-	case (err != nil || info == nil) && strings.HasSuffix(st.Apex, ".ir"):
-		// IRNIC has no RDAP and registrars hide .ir registration data, so a
-		// failed lookup is expected there and is not worth a warning.
-		r.Add("reg.not_published", Info,
-			"Registration data is not published for this .ir domain (hidden by the registrar).",
-			strings.TrimSpace(d.RDAPError+"; "+d.WHOISError))
-		return r.Finish("Registration data not published (.ir)")
 	case err != nil || info == nil:
 		r.Add("reg.lookup_failed", Warning,
 			"Registration data could not be retrieved (RDAP and WHOIS both failed); continuing with DNS checks.",
