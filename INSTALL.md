@@ -1,5 +1,7 @@
 # Installing netarget
 
+> For a step-by-step Docker deployment of the master and agent nodes, including adding a node, see [docs/DEPLOY.md](docs/DEPLOY.md). This file is the reference for building, systemd and every setting.
+
 Two binaries: **master** (UI + API + DNS/RDAP lookups, embeds the web UI) and **agent**
 (runs on each measurement node). Plus the **domaindoctor** CLI.
 

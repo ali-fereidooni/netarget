@@ -1,0 +1,26 @@
+# Measurement agent on its own server. The master reaches it over the
+# internet with HTTPS and a pinned certificate; the firewall must allow the
+# agent port from the master's IP only. See docs/DEPLOY.md.
+#
+#   docker compose -f docker-compose.agent.yml up -d --build
+#
+# Needs .env with AGENT_SECRET, and config/agent.crt + config/agent.key
+# (created with the gen-cert command in docs/DEPLOY.md).
+services:
+  agent:
+    build: .
+    image: netarget:latest
+    command: ["/usr/local/bin/agent"]
+    network_mode: host
+    env_file:
+      - path: .env
+        required: true
+    environment:
+      AGENT_LISTEN: ${AGENT_LISTEN:-0.0.0.0:9443}
+      AGENT_TLS_CERT: /etc/netarget/agent.crt
+      AGENT_TLS_KEY: /etc/netarget/agent.key
+    volumes:
+      - ./config:/etc/netarget:ro
+    cap_add: [NET_RAW]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped

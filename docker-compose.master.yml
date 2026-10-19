@@ -1,0 +1,37 @@
+# Master node in production: UI + API + DNS/RDAP lookups, plus a local agent
+# so the master also probes from itself. Runs behind nginx on 127.0.0.1:8082.
+# Host networking: probes leave from the server itself, and nginx (127.0.0.1)
+# is the only trusted proxy hop. See docs/DEPLOY.md.
+#
+#   docker compose -f docker-compose.master.yml up -d --build
+#
+# Remote agents: put config/nodes.json next to this file, set
+# NODES_FILE=/etc/netarget/nodes.json and the agent secrets in .env.
+services:
+  master:
+    build: .
+    image: netarget:latest
+    command: ["/usr/local/bin/master"]
+    network_mode: host
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      LISTEN_ADDR: 127.0.0.1:8082
+      LOCAL_AGENT: "1"
+      LOCAL_NODE_NAME: ${LOCAL_NODE_NAME:-netarget}
+      LOCAL_NODE_LOCATION: ${LOCAL_NODE_LOCATION:-IR}
+      NODES_FILE: ${NODES_FILE:-}
+      TRUSTED_PROXY_HOPS: "1"
+      TRUSTED_PROXY_CIDRS: 127.0.0.1,::1
+      REPORTS_DIR: /data/reports
+      DNS_TRANSPORT: auto
+    volumes:
+      - reports:/data/reports
+      - ./config:/etc/netarget:ro
+    cap_add: [NET_RAW]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+volumes:
+  reports: {}

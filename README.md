@@ -24,6 +24,8 @@ matrix, resource waterfall and a server-type selector, Copy Link / Permanent Lin
 Markdown export; JSON API (`POST /api/check`, `POST /api/web-diagnose`); CLI
 (`domaindoctor check example.com --json [--origin-ip IP]`); master/agent deployment.
 
+**Deploying:** [docs/DEPLOY.md](docs/DEPLOY.md) covers the master node and agent nodes with Docker, and adding a node. It matches the netarget.ir production setup. [INSTALL.md](INSTALL.md) covers building, systemd and all settings.
+
 ```bash
 go test ./...
 go run ./cmd/domaindoctor check example.com
