@@ -195,7 +195,8 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) { /* private mode */ } },
 };
 
-let lang = store.get("dd.lang", "en") === "fa" ? "fa" : "en";
+// Farsi is the default; a viewer's saved choice wins.
+let lang = store.get("dd.lang", "fa") === "en" ? "en" : "fa";
 let current = { requestId: null, reportId: null, report: null, readOnly: false, es: null, layers: {} };
 let nodeCache = [];
 // The sidebar no longer lists recent checks; drop what older versions stored.
@@ -265,9 +266,11 @@ function applyLang() {
   else if (current.requestId) { LAYERS.forEach((l) => setCard(l, current.layers[l] || { status: "PENDING" })); renderPipeline(); }
 }
 
-function applyTheme(theme) {
+// Only an explicit choice is remembered (dd.themeChoice). The old dd.theme key
+// was written on every load, so it says nothing about what the viewer wanted.
+function applyTheme(theme, remember) {
   document.documentElement.dataset.theme = theme;
-  store.set("dd.theme", theme);
+  if (remember) store.set("dd.themeChoice", theme);
   updateThemeLabel();
 }
 function updateThemeLabel() {
@@ -748,7 +751,7 @@ async function copy(text) {
 $("form").addEventListener("submit", (ev) => { ev.preventDefault(); if (!$("go").disabled) startCheck($("domain").value); });
 document.querySelectorAll("[data-example]").forEach((b) => b.addEventListener("click", () => { $("domain").value = b.dataset.example; $("domain").focus(); }));
 document.querySelectorAll("[data-lang]").forEach((b) => b.addEventListener("click", () => { lang = b.dataset.lang; store.set("dd.lang", lang); applyLang(); }));
-$("theme").addEventListener("click", () => applyTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light"));
+$("theme").addEventListener("click", () => applyTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light", true));
 $("copy").addEventListener("click", async () => {
   const url = current.reportId ? `${location.origin}/r/${current.reportId}` : `${location.origin}/c/${current.requestId}`;
   if (await copy(url)) {
@@ -772,8 +775,9 @@ window.addEventListener("popstate", () => location.reload());
   // ?lang=fa / ?theme=light override (and remember) the viewer's choice.
   const qs = new URLSearchParams(location.search);
   if (qs.get("lang") === "fa" || qs.get("lang") === "en") { lang = qs.get("lang"); store.set("dd.lang", lang); }
-  if (qs.get("theme") === "light" || qs.get("theme") === "dark") store.set("dd.theme", qs.get("theme"));
-  applyTheme(store.get("dd.theme", "dark") === "light" ? "light" : "dark");
+  if (qs.get("theme") === "light" || qs.get("theme") === "dark") store.set("dd.themeChoice", qs.get("theme"));
+  try { localStorage.removeItem("dd.theme"); } catch (_) { /* private mode */ }
+  applyTheme(store.get("dd.themeChoice", "light") === "dark" ? "dark" : "light"); // light by default
   applyLang();
   loadNodes();
   const m = location.pathname.match(/^\/(c|r)\/([0-9a-f]{40})$/);
