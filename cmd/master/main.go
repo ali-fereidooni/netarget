@@ -16,7 +16,9 @@ import (
 	"domaindoctor/internal/api"
 	"domaindoctor/internal/clientip"
 	"domaindoctor/internal/config"
+	"domaindoctor/internal/rdap"
 	"domaindoctor/internal/report"
+	"domaindoctor/internal/serveraccess"
 	"domaindoctor/web"
 )
 
@@ -49,6 +51,17 @@ func main() {
 		}
 	}
 
+	saPorts, _ := config.ServerCheckPorts(lg)
+	sa := serveraccess.Deps{
+		PTR:   deps.DNS,
+		RDAP:  rdap.New(),
+		Ports: saPorts,
+	}
+	if asnDB != nil {
+		sa.ASN = asnDB
+	}
+	lg.Printf("server check enabled on ports %v", saPorts)
+
 	srv := api.New(api.Config{
 		Deps:          deps,
 		Registry:      reg,
@@ -58,6 +71,7 @@ func main() {
 		UI:            web.Static(),
 		MaxConcurrent: config.EnvInt("MAX_CONCURRENT_CHECKS", 30),
 		Log:           lg,
+		ServerAccess:  sa,
 	})
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

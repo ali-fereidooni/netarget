@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="fa" dir="rtl" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>netarget — server check</title>
+<link rel="preload" href="/static/fonts/Vazirmatn-wght.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/static/style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%233288E5'/%3E%3Cpath d='M6 17h5l2.5-6 4 11 2.5-5H26' fill='none' stroke='%23020D13' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+</head>
+<body>
+<svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l2-5 4 11 2-6h6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></symbol>
+  <symbol id="i-id" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2"/><path d="M6 16c.7-1.3 1.8-2 3-2s2.3.7 3 2M14.5 10h4M14.5 13.5h3"/></symbol>
+  <symbol id="i-radar" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12l5.5-5.5"/><circle cx="12" cy="12" r="1"/></symbol>
+  <symbol id="i-servers" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="6.5" rx="2"/><rect x="4" y="13.5" width="16" height="6.5" rx="2"/><path d="M8 7.25h.01M8 16.75h.01"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol>
+</svg>
+
+<div class="app">
+  <aside class="rail" aria-label="Sidebar">
+    <a class="brand" href="/">
+      <span class="brand-mark"><svg class="icon"><use href="#i-pulse"/></svg></span>
+      <span class="brand-text"><strong>netarget</strong><small data-i18n="tagline">Server check</small></span>
+    </a>
+    <a class="new-check" href="/"><svg class="icon"><use href="#i-globe"/></svg><span data-i18n="domainCheck">Domain check</span></a>
+    <div class="rail-foot">
+      <div class="seg" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+        <button type="button" data-lang="fa" aria-pressed="true" lang="fa">فا</button>
+      </div>
+      <button type="button" class="icon-btn" id="theme" aria-label="Switch theme">
+        <svg class="icon only-dark"><use href="#i-sun"/></svg><svg class="icon only-light"><use href="#i-moon"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <main class="main" id="main">
+    <header class="topbar">
+      <div class="topbar-title">
+        <h1 data-i18n="title">Server accessibility check</h1>
+        <p class="muted" data-i18n="sub">Identity, reachability from the measurement nodes, and which service ports answer.</p>
+      </div>
+    </header>
+
+    <form id="form" class="widget search" autocomplete="off">
+      <label for="target" class="search-label" data-i18n="inputLabel">Server IP address or hostname</label>
+      <div class="search-row">
+        <div class="field">
+          <svg class="icon field-icon"><use href="#i-servers"/></svg>
+          <input id="target" name="target" type="text" dir="ltr" placeholder="203.0.113.10 or host.example.com" spellcheck="false" autocapitalize="off" required maxlength="255">
+        </div>
+        <button id="go" type="submit" class="btn primary"><svg class="icon"><use href="#i-search"/></svg><span data-i18n="check">Check</span></button>
+      </div>
+      <label class="search-label" for="authorized">
+        <input id="authorized" name="authorized" type="checkbox">
+        <span data-i18n="authorize">I own this server or am authorized to check it.</span>
+      </label>
+      <p class="hint" data-i18n="ports">Checks a small set of service ports configured by the operator.</p>
+    </form>
+
+    <p id="error" class="alert" role="alert" hidden></p>
+    <p id="banner" class="banner" role="status" hidden></p>
+
+    <section id="result" hidden>
+      <div class="result-head">
+        <h2 id="rtitle" dir="ltr"></h2>
+        <p id="rmeta" class="muted"></p>
+      </div>
+      <div id="stages" class="cards"></div>
+    </section>
+
+    <footer class="foot muted" data-i18n="footer">Read-only checks: ping, TCP connect, reverse DNS and public registry data. No login, nothing is run on the server.</footer>
+  </main>
+</div>
+<script src="/static/servercheck.js"></script>
+</body>
+</html>

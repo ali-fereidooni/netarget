@@ -6,7 +6,7 @@ const LAYER_ICON = { registration: "i-id", nameservers: "i-servers", zone: "i-re
 
 const STRINGS = {
   en: {
-    tagline: "Domain troubleshooting", newCheck: "New check",
+    tagline: "Domain troubleshooting", newCheck: "New check", serverCheck: "Server check",
     nodes: "Measurement nodes", noNodes: "No node is online.",
     titleNew: "Check a domain", subNew: "Registration, name servers, DNS, reachability and the web server, in order.",
     titleResult: "Check result", titleReport: "Shared report",
@@ -97,7 +97,7 @@ const STRINGS = {
     },
   },
   fa: {
-    tagline: "عیب‌یابی دامنه", newCheck: "بررسی جدید",
+    tagline: "عیب‌یابی دامنه", newCheck: "بررسی جدید", serverCheck: "بررسی سرور",
     nodes: "گره‌های اندازه‌گیری", noNodes: "هیچ گره‌ای آنلاین نیست.",
     titleNew: "بررسی دامنه", subNew: "ثبت دامنه، نیم‌سرورها، DNS، دسترس‌پذیری و وب‌سرور، به ترتیب.",
     titleResult: "نتیجهٔ بررسی", titleReport: "گزارش اشتراکی",

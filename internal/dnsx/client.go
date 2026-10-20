@@ -228,3 +228,24 @@ func Rcode(m *dns.Msg) string {
 	}
 	return dns.RcodeToString[m.Rcode]
 }
+
+// LookupPTR returns the first reverse-DNS (PTR) name for ip via the public
+// recursive resolvers. It works in both direct and DoH modes (it uses the
+// same Recurse path as forward lookups). An empty name with a nil error means
+// the address has no PTR record.
+func (c *Client) LookupPTR(ctx context.Context, ip netip.Addr) (string, error) {
+	rev, err := dns.ReverseAddr(ip.String())
+	if err != nil {
+		return "", err
+	}
+	m, err := c.Recurse(ctx, rev, dns.TypePTR)
+	if err != nil {
+		return "", err
+	}
+	for _, rr := range m.Answer {
+		if p, ok := rr.(*dns.PTR); ok {
+			return strings.TrimSuffix(strings.ToLower(p.Ptr), "."), nil
+		}
+	}
+	return "", nil
+}

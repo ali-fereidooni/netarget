@@ -43,10 +43,15 @@ type Info struct {
 type Client struct {
 	HTTP         *http.Client
 	BootstrapURL string
+	// IP RDAP bootstrap overrides (tests); empty means the IANA defaults.
+	IPv4BootstrapURL string
+	IPv6BootstrapURL string
 
-	mu       sync.Mutex
-	services map[string][]string // tld/suffix -> base URLs
-	fetched  time.Time
+	mu         sync.Mutex
+	services   map[string][]string // tld/suffix -> base URLs (domain RDAP)
+	fetched    time.Time
+	ipServices map[bool][][2][]string // is6 -> ordered (prefixes, base URLs) (IP RDAP)
+	ipFetched  time.Time
 }
 
 func New() *Client {

@@ -19,7 +19,11 @@ import (
 // mode and the CLI use it directly. All inputs are re-validated here, so the
 // agent enforces the SSRF policy itself instead of trusting the master.
 type Local struct {
-	HTTPProber    HTTPProber
+	HTTPProber HTTPProber
+	// AllowPorts is the TCP port allow-list this node will test. When nil it
+	// falls back to the package default AllowedPorts (80/443). The agent
+	// enforces it itself, so a master cannot make a node test other ports.
+	AllowPorts    map[int]bool
 	AllowLoopback bool        // tests only
 	PortMap       map[int]int // tests/demo only (with AllowLoopback): logical -> real TCP port
 	// PingFunc and TraceFunc can be replaced in tests.
@@ -53,6 +57,14 @@ func (l *Local) acquire(ctx context.Context) (func(), error) {
 	}
 }
 
+// portAllowed reports whether this node will test TCP port p.
+func (l *Local) portAllowed(p int) bool {
+	if l.AllowPorts != nil {
+		return l.AllowPorts[p]
+	}
+	return AllowedPorts[p]
+}
+
 func (l *Local) checkIPs(ips []netip.Addr) error {
 	if len(ips) == 0 || len(ips) > 8 {
 		return ErrInvalidRequest
@@ -70,11 +82,11 @@ func (l *Local) Probe(ctx context.Context, req ProbeRequest) (*ProbeResponse, er
 		return nil, err
 	}
 	for _, p := range req.Ports {
-		if !AllowedPorts[p] && !l.AllowLoopback {
+		if !l.portAllowed(p) && !l.AllowLoopback {
 			return nil, ErrInvalidRequest
 		}
 	}
-	if len(req.Ports) > 4 {
+	if len(req.Ports) > MaxProbePorts {
 		return nil, ErrInvalidRequest
 	}
 	rel, err := l.acquire(ctx)

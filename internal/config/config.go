@@ -34,6 +34,27 @@ func EnvInt(key string, def int) int {
 	return def
 }
 
+// DefaultServerCheckPorts is the small, provider-relevant TCP port set the
+// Server Accessibility check uses when SERVER_CHECK_PORTS is not set.
+const DefaultServerCheckPorts = "22,80,443,8443"
+
+// ServerCheckPorts returns the configured TCP port allow-list for the
+// Server Accessibility check (env SERVER_CHECK_PORTS, else the default). It
+// must be set to the same value on the master and on every agent, because
+// each agent enforces its own allow-list and rejects ports outside it. An
+// invalid value falls back to the default and is logged.
+func ServerCheckPorts(lg *log.Logger) (ordered []int, set map[int]bool) {
+	raw := Env("SERVER_CHECK_PORTS", DefaultServerCheckPorts)
+	set, err := probe.ParsePorts(raw)
+	if err != nil || len(set) == 0 {
+		if err != nil && lg != nil {
+			lg.Printf("SERVER_CHECK_PORTS %q is invalid (%v); using %s", raw, err, DefaultServerCheckPorts)
+		}
+		set, _ = probe.ParsePorts(DefaultServerCheckPorts)
+	}
+	return probe.SortedPorts(set), set
+}
+
 // Deps builds orchestrator dependencies (DNS, RDAP, WHOIS, optional ASN).
 func Deps(lg *log.Logger) (orchestrator.Deps, *asn.DB) {
 	var db *asn.DB
@@ -85,7 +106,9 @@ func Registry(lg *log.Logger) (*nodes.Registry, error) {
 		ns = append(ns, reg.All()...)
 	}
 	if os.Getenv("LOCAL_AGENT") == "1" || len(ns) == 0 {
-		ns = append([]*nodes.Node{nodes.LocalNode(Env("LOCAL_NODE_NAME", "Master node"), Env("LOCAL_NODE_LOCATION", "local"), &probe.Local{})}, ns...)
+		_, portSet := ServerCheckPorts(lg)
+		local := &probe.Local{AllowPorts: portSet}
+		ns = append([]*nodes.Node{nodes.LocalNode(Env("LOCAL_NODE_NAME", "Master node"), Env("LOCAL_NODE_LOCATION", "local"), local)}, ns...)
 	}
 	if len(ns) == 0 {
 		return nil, fmt.Errorf("no measurement nodes configured")

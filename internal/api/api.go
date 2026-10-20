@@ -29,6 +29,7 @@ import (
 	"domaindoctor/internal/ratelimit"
 	"domaindoctor/internal/report"
 	"domaindoctor/internal/safenet"
+	"domaindoctor/internal/serveraccess"
 )
 
 type Config struct {
@@ -41,6 +42,9 @@ type Config struct {
 	MaxConcurrent int           // global cap on running checks/traceroutes
 	CheckTimeout  time.Duration
 	Log           *log.Logger
+	// ServerAccess configures the optional Server Accessibility check. When
+	// its Ports are empty the feature is disabled and its endpoints 503.
+	ServerAccess serveraccess.Deps
 }
 
 type Server struct {
@@ -110,6 +114,7 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/check", s.startCheck)
 	mux.HandleFunc("POST /api/web-diagnose", s.webDiagnose)
+	mux.HandleFunc("GET /api/server-access", s.serverAccess)
 	mux.HandleFunc("GET /api/check/{id}", s.getCheck)
 	mux.HandleFunc("GET /api/nodes", s.getNodes)
 	mux.HandleFunc("GET /api/traceroute", s.traceroute)
@@ -131,6 +136,14 @@ func (s *Server) Handler() http.Handler {
 		mux.HandleFunc("GET /{$}", index)
 		mux.HandleFunc("GET /r/{id}", index)
 		mux.HandleFunc("GET /c/{id}", index)
+		// Server Accessibility check: its own small, self-contained page.
+		if page, err := fs.ReadFile(s.cfg.UI, "servercheck.html"); err == nil {
+			mux.HandleFunc("GET /server-check", func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				w.Header().Set("Cache-Control", "no-cache")
+				w.Write(page)
+			})
+		}
 		mux.Handle("GET /static/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Versioned URLs (?v=<content hash>) never change, so a CDN may keep
 			// them; anything else is cached briefly.

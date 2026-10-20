@@ -47,7 +47,9 @@ func main() {
 		lg.Fatal("AGENT_SECRET (or AGENT_SECRET_FILE) must be set to a random secret of at least 32 characters (openssl rand -hex 32)")
 	}
 	addr := config.Env("AGENT_LISTEN", "127.0.0.1:9090")
-	h := (&agent.Server{Secret: secret, P: &probe.Local{}, Log: lg}).Handler()
+	ports, portSet := config.ServerCheckPorts(lg)
+	lg.Printf("TCP port allow-list: %v (set SERVER_CHECK_PORTS to change; must match the master)", ports)
+	h := (&agent.Server{Secret: secret, P: &probe.Local{AllowPorts: portSet}, Log: lg}).Handler()
 
 	hs := &http.Server{Addr: addr, Handler: h, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second}
 	certFile, keyFile := os.Getenv("AGENT_TLS_CERT"), os.Getenv("AGENT_TLS_KEY")

@@ -6,7 +6,11 @@ package probe
 
 import (
 	"context"
+	"fmt"
 	"net/netip"
+	"sort"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -19,8 +23,46 @@ type Prober interface {
 	Health(ctx context.Context) error
 }
 
-// AllowedPorts are the only TCP ports agents will test (limits port-scan abuse).
+// AllowedPorts is the default TCP port allow-list an agent tests when it is
+// not given an explicit one (Local.AllowPorts). Keeping it small limits
+// port-scan abuse; the server-access feature widens it via configuration.
 var AllowedPorts = map[int]bool{80: true, 443: true}
+
+// MaxProbePorts caps how many ports one probe request may test, so a single
+// call can never become a wide scan regardless of the allow-list size.
+const MaxProbePorts = 8
+
+// ParsePorts turns a comma/space separated list ("22,80,443,8443") into a
+// deduplicated set. It rejects out-of-range ports and lists longer than
+// MaxProbePorts. An empty string returns a nil set (meaning "use the default").
+func ParsePorts(s string) (map[int]bool, error) {
+	fields := strings.FieldsFunc(s, func(r rune) bool { return r == ',' || r == ' ' || r == '\t' || r == '\n' })
+	if len(fields) == 0 {
+		return nil, nil
+	}
+	set := map[int]bool{}
+	for _, f := range fields {
+		p, err := strconv.Atoi(strings.TrimSpace(f))
+		if err != nil || p < 1 || p > 65535 {
+			return nil, fmt.Errorf("invalid port %q", f)
+		}
+		set[p] = true
+	}
+	if len(set) > MaxProbePorts {
+		return nil, fmt.Errorf("at most %d ports may be configured", MaxProbePorts)
+	}
+	return set, nil
+}
+
+// SortedPorts returns the ports of a set in ascending order.
+func SortedPorts(set map[int]bool) []int {
+	out := make([]int, 0, len(set))
+	for p := range set {
+		out = append(out, p)
+	}
+	sort.Ints(out)
+	return out
+}
 
 type ProbeRequest struct {
 	Host      string       `json:"host"`
