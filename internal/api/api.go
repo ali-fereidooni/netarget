@@ -137,7 +137,7 @@ func (s *Server) Handler() http.Handler {
 		mux.HandleFunc("GET /r/{id}", index)
 		mux.HandleFunc("GET /c/{id}", index)
 		// Server Accessibility check: its own small, self-contained page.
-		if page, err := fs.ReadFile(s.cfg.UI, "servercheck.html"); err == nil {
+		if page := versionedPage(s.cfg.UI, "servercheck.html", "servercheck.js", "style.css"); page != nil {
 			mux.HandleFunc("GET /server-check", func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "text/html; charset=utf-8")
 				w.Header().Set("Cache-Control", "no-cache")
@@ -162,12 +162,18 @@ func (s *Server) Handler() http.Handler {
 // app.js and style.css URLs, so a CDN that caches static files serves the new
 // ones as soon as a new master is deployed. nil if index.html is missing.
 func versionedIndex(ui fs.FS) []byte {
-	b, err := fs.ReadFile(ui, "index.html")
+	return versionedPage(ui, "index.html", "app.js", "style.css")
+}
+
+// versionedPage returns the HTML page with ?v=<content hash> appended to the
+// given /static/ asset URLs. nil if the page is missing.
+func versionedPage(ui fs.FS, pageName string, assets ...string) []byte {
+	b, err := fs.ReadFile(ui, pageName)
 	if err != nil {
 		return nil
 	}
 	page := string(b)
-	for _, name := range []string{"app.js", "style.css"} {
+	for _, name := range assets {
 		data, err := fs.ReadFile(ui, name)
 		if err != nil {
 			continue

@@ -55,6 +55,17 @@ func ServerCheckPorts(lg *log.Logger) (ordered []int, set map[int]bool) {
 	return probe.SortedPorts(set), set
 }
 
+// ServerCheckCustomPort reports how many operator-typed ports, outside
+// SERVER_CHECK_PORTS, one server check may add: 1 by default, 0 when
+// SERVER_CHECK_CUSTOM_PORT=0. Like the port list, set it the same on the
+// master and every agent; an agent with 0 rejects checks that carry one.
+func ServerCheckCustomPort() int {
+	if Env("SERVER_CHECK_CUSTOM_PORT", "1") == "0" {
+		return 0
+	}
+	return 1
+}
+
 // Deps builds orchestrator dependencies (DNS, RDAP, WHOIS, optional ASN).
 func Deps(lg *log.Logger) (orchestrator.Deps, *asn.DB) {
 	var db *asn.DB
@@ -107,7 +118,7 @@ func Registry(lg *log.Logger) (*nodes.Registry, error) {
 	}
 	if os.Getenv("LOCAL_AGENT") == "1" || len(ns) == 0 {
 		_, portSet := ServerCheckPorts(lg)
-		local := &probe.Local{AllowPorts: portSet}
+		local := &probe.Local{AllowPorts: portSet, ExtraPorts: ServerCheckCustomPort()}
 		ns = append([]*nodes.Node{nodes.LocalNode(Env("LOCAL_NODE_NAME", "Master node"), Env("LOCAL_NODE_LOCATION", "local"), local)}, ns...)
 	}
 	if len(ns) == 0 {

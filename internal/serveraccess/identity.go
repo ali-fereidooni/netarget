@@ -2,7 +2,9 @@ package serveraccess
 
 import (
 	"context"
+	"errors"
 	"net/netip"
+	"sort"
 	"sync"
 	"time"
 
@@ -40,6 +42,42 @@ type Deps struct {
 	ASN      ASNLookup        // ASN/operator (nil = skip)
 	Ports    []int            // TCP ports to test
 	Now      func() time.Time
+	// CustomPortAllowed lets an operator add one port of their own to a
+	// check (WithCustomPort). The nodes must allow it too (probe.Local.ExtraPorts).
+	CustomPortAllowed bool
+
+	customPort int // set by WithCustomPort for one run
+}
+
+// Custom-port errors. The API maps these to stable codes.
+var (
+	ErrBadPort       = errors.New("the extra port must be a number from 1 to 65535")
+	ErrCustomPortOff = errors.New("custom ports are not enabled on this instance")
+)
+
+// WithCustomPort returns a copy of d that also tests port p in this run.
+// p == 0 means "no custom port". A port already in the list is not added twice.
+func (d Deps) WithCustomPort(p int) (Deps, error) {
+	if p == 0 {
+		return d, nil
+	}
+	if p < 1 || p > 65535 {
+		return d, ErrBadPort
+	}
+	if !d.CustomPortAllowed {
+		return d, ErrCustomPortOff
+	}
+	ports := make([]int, 0, len(d.Ports)+1) // fresh slice: never alias the shared config
+	for _, q := range d.Ports {
+		if q == p {
+			return d, nil
+		}
+		ports = append(ports, q)
+	}
+	ports = append(ports, p)
+	sort.Ints(ports)
+	d.Ports, d.customPort = ports, p
+	return d, nil
 }
 
 func (d Deps) now() time.Time {

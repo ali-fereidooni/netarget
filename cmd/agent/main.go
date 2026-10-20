@@ -48,8 +48,9 @@ func main() {
 	}
 	addr := config.Env("AGENT_LISTEN", "127.0.0.1:9090")
 	ports, portSet := config.ServerCheckPorts(lg)
-	lg.Printf("TCP port allow-list: %v (set SERVER_CHECK_PORTS to change; must match the master)", ports)
-	h := (&agent.Server{Secret: secret, P: &probe.Local{AllowPorts: portSet}, Log: lg}).Handler()
+	extra := config.ServerCheckCustomPort()
+	lg.Printf("TCP port allow-list: %v, plus %d custom port per check (SERVER_CHECK_PORTS / SERVER_CHECK_CUSTOM_PORT; must match the master)", ports, extra)
+	h := (&agent.Server{Secret: secret, P: &probe.Local{AllowPorts: portSet, ExtraPorts: extra}, Log: lg}).Handler()
 
 	hs := &http.Server{Addr: addr, Handler: h, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second}
 	certFile, keyFile := os.Getenv("AGENT_TLS_CERT"), os.Getenv("AGENT_TLS_KEY")

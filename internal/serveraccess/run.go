@@ -25,7 +25,7 @@ func Run(ctx context.Context, deps Deps, t Target, ns []*nodes.Node, id string, 
 	}
 	rep := &Report{
 		ID: id, Target: t.Input, Host: t.Host, Status: StatusRunning,
-		StartedAt: deps.now().UTC(), Ports: deps.Ports,
+		StartedAt: deps.now().UTC(), Ports: deps.Ports, CustomPort: deps.customPort,
 	}
 	emit(Event{Type: "start", Target: t.Input, Host: t.Host, Ports: deps.Ports})
 

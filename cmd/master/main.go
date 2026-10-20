@@ -53,9 +53,10 @@ func main() {
 
 	saPorts, _ := config.ServerCheckPorts(lg)
 	sa := serveraccess.Deps{
-		PTR:   deps.DNS,
-		RDAP:  rdap.New(),
-		Ports: saPorts,
+		PTR:               deps.DNS,
+		RDAP:              rdap.New(),
+		Ports:             saPorts,
+		CustomPortAllowed: config.ServerCheckCustomPort() > 0,
 	}
 	if asnDB != nil {
 		sa.ASN = asnDB

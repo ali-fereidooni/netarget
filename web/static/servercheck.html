@@ -56,11 +56,16 @@
         </div>
         <button id="go" type="submit" class="btn primary"><svg class="icon"><use href="#i-search"/></svg><span data-i18n="check">Check</span></button>
       </div>
+      <label for="port" class="search-label" data-i18n="extraPort">Extra port (optional)</label>
+      <div class="field">
+        <svg class="icon field-icon"><use href="#i-radar"/></svg>
+        <input id="port" name="port" type="number" dir="ltr" min="1" max="65535" step="1" inputmode="numeric" placeholder="2053">
+      </div>
       <label class="search-label" for="authorized">
         <input id="authorized" name="authorized" type="checkbox">
         <span data-i18n="authorize">I own this server or am authorized to check it.</span>
       </label>
-      <p class="hint" data-i18n="ports">Checks a small set of service ports configured by the operator.</p>
+      <p class="hint" data-i18n="ports">Checks the standard service ports, plus the extra port if you enter one.</p>
     </form>
 
     <p id="error" class="alert" role="alert" hidden></p>

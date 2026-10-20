@@ -2,6 +2,7 @@ package serveraccess
 
 import (
 	"context"
+	"fmt"
 	"net/netip"
 	"testing"
 	"time"
@@ -206,5 +207,41 @@ func TestRunNodeError(t *testing.T) {
 	}
 	if rep.Services.Rows[0].State != "unknown" {
 		t.Errorf("state = %q, want unknown", rep.Services.Rows[0].State)
+	}
+}
+
+func TestWithCustomPort(t *testing.T) {
+	base := Deps{Ports: []int{22, 80, 443, 8443}, CustomPortAllowed: true}
+	cases := []struct {
+		port    int
+		allowed bool
+		want    []int
+		wantErr error
+	}{
+		{0, true, []int{22, 80, 443, 8443}, nil},
+		{2053, true, []int{22, 80, 443, 2053, 8443}, nil},
+		{443, true, []int{22, 80, 443, 8443}, nil}, // already listed: not added twice
+		{70000, true, nil, ErrBadPort},
+		{-1, true, nil, ErrBadPort},
+		{2053, false, nil, ErrCustomPortOff},
+	}
+	for _, c := range cases {
+		d := base
+		d.CustomPortAllowed = c.allowed
+		got, err := d.WithCustomPort(c.port)
+		if err != c.wantErr {
+			t.Errorf("port %d: err %v, want %v", c.port, err, c.wantErr)
+			continue
+		}
+		if err != nil {
+			continue
+		}
+		if fmt.Sprint(got.Ports) != fmt.Sprint(c.want) {
+			t.Errorf("port %d: ports %v, want %v", c.port, got.Ports, c.want)
+		}
+	}
+	// The shared config slice must never be modified.
+	if fmt.Sprint(base.Ports) != "[22 80 443 8443]" {
+		t.Errorf("base ports mutated: %v", base.Ports)
 	}
 }

@@ -30,7 +30,8 @@ type Report struct {
 	Status     string         `json:"status"`
 	StartedAt  time.Time      `json:"started_at"`
 	FinishedAt *time.Time     `json:"finished_at,omitempty"`
-	Ports      []int          `json:"ports"` // the port set that was tested
+	Ports      []int          `json:"ports"`                 // the port set that was tested
+	CustomPort int            `json:"custom_port,omitempty"` // operator-typed extra port, if any
 	Identity   *IdentityStage `json:"identity,omitempty"`
 	Ping       *PingStage     `json:"ping,omitempty"`
 	Services   *PortStage     `json:"services,omitempty"`

@@ -34,8 +34,12 @@ LOCAL_AGENT=1 AGENT_SECRET=$(openssl rand -hex 32) go run ./cmd/master
 API (Server-Sent Events, one event per stage):
 
 ```
-GET /api/server-access?target=<ip|hostname>&authorized=1
+GET /api/server-access?target=<ip|hostname>&authorized=1[&port=<1-65535>]
 ```
+
+`port` is an optional extra port for this one check (for example a customer's
+panel port or SSH on 2222). It is tested alongside the standard ports and shown
+as "custom" in the results.
 
 `authorized=1` is the operator's confirmation that they own or may check the
 target; every request is audit-logged (client IP + target + time, never any
@@ -46,6 +50,7 @@ secret). The UI is a standalone page at `/server-check`.
 | Variable              | Default         | Meaning                                                                 |
 |-----------------------|-----------------|-------------------------------------------------------------------------|
 | `SERVER_CHECK_PORTS`  | `22,80,443,8443`| TCP ports the check tests (comma-separated, max 8). **Must be set to the same value on the master and on every agent** — each agent enforces its own allow-list and rejects ports outside it. |
+| `SERVER_CHECK_CUSTOM_PORT` | `1`        | `1` lets each check add one operator-typed port outside `SERVER_CHECK_PORTS`; `0` turns that off. Set it the same on the master and every agent — an agent with `0` rejects checks that carry a custom port. |
 | `ASN_CSV_PATH`        | *(unset)*       | Optional ipinfo-style CSV enabling ASN / operator enrichment.           |
 | `DNS_TRANSPORT`       | `auto`          | Shared with the rest of netarget; PTR lookups use DoH when port 53 is blocked. |
 
@@ -57,8 +62,10 @@ check API.
 
 - **Reachability and identity only.** No banner/version grabbing, no SSH
   host-key/cipher/auth-method enumeration, no vulnerability or brute-force
-  probing. The port set is small and the per-request port count is capped
-  (`probe.MaxProbePorts`).
+  probing. The port set is small, each node accepts at most one port outside
+  its allow-list per request (`probe.Local.ExtraPorts`), and the per-request
+  port count is capped (`probe.MaxProbePorts`). On netarget.ir the page and
+  API are also limited to staff IPs by nginx.
 - IP-RDAP data depends on the responsible RIR publishing it; some blocks
   return no organization/abuse data. ASN/operator requires a loaded dataset.
 - The TLS/HTTP summary is best-effort; for an IP target there is no SNI host

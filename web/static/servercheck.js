@@ -11,7 +11,9 @@ const STRINGS = {
     sub: "Identity, reachability from the measurement nodes, and which service ports answer.",
     inputLabel: "Server IP address or hostname", check: "Check", checking: "Checking…",
     authorize: "I own this server or am authorized to check it.",
-    ports: "Checks a small set of service ports configured by the operator.",
+    ports: "Checks the standard service ports, plus the extra port if you enter one.",
+    extraPort: "Extra port (optional)", custom: "custom", portsWord: "ports",
+    badPort: "The extra port must be a number from 1 to 65535.",
     footer: "Read-only checks: ping, TCP connect, reverse DNS and public registry data. No login, nothing is run on the server.",
     needAuth: "Please confirm you are authorized to check this target.",
     identity: "Identity", ping: "Reachability (ping)", services: "Service ports",
@@ -32,6 +34,8 @@ const STRINGS = {
       sa_no_ip: "The hostname does not resolve to any public IP address.",
       sa_unauthorized: "Please confirm you are authorized to check this target.",
       sa_disabled: "The server check is not enabled on this instance.",
+      sa_bad_port: "The extra port must be a number from 1 to 65535.",
+      sa_port_off: "Custom ports are not enabled on this instance.",
       rate_limited: "Too many requests — try again in a minute.",
       request_running: "Another request from your address is still running.",
       busy: "The server is busy — please try again shortly.",
@@ -44,7 +48,9 @@ const STRINGS = {
     sub: "شناسهٔ سرور، دسترس‌پذیری از گره‌های اندازه‌گیری و اینکه کدام پورت‌های سرویس پاسخ می‌دهند.",
     inputLabel: "آی‌پی یا نام میزبان سرور", check: "بررسی", checking: "در حال بررسی…",
     authorize: "مالک این سرور هستم یا اجازهٔ بررسی آن را دارم.",
-    ports: "مجموعه‌ای کوچک از پورت‌های سرویس را که اپراتور تعیین کرده بررسی می‌کند.",
+    ports: "پورت‌های استاندارد سرویس را بررسی می‌کند، به‌علاوهٔ پورت اضافه اگر وارد کنید.",
+    extraPort: "پورت اضافه (اختیاری)", custom: "سفارشی", portsWord: "پورت‌ها",
+    badPort: "پورت اضافه باید عددی بین ۱ تا ۶۵۵۳۵ باشد.",
     footer: "بررسی‌ها فقط‌خواندنی‌اند: پینگ، اتصال TCP، DNS معکوس و دادهٔ عمومی رجیستری. هیچ ورودی یا اجرای فرمانی روی سرور انجام نمی‌شود.",
     needAuth: "لطفاً تأیید کنید که اجازهٔ بررسی این هدف را دارید.",
     identity: "شناسه", ping: "دسترس‌پذیری (پینگ)", services: "پورت‌های سرویس",
@@ -65,6 +71,8 @@ const STRINGS = {
       sa_no_ip: "این نام میزبان به هیچ آی‌پی عمومی تبدیل نمی‌شود.",
       sa_unauthorized: "لطفاً تأیید کنید که اجازهٔ بررسی این هدف را دارید.",
       sa_disabled: "بررسی سرور روی این نمونه فعال نیست.",
+      sa_bad_port: "پورت اضافه باید عددی بین ۱ تا ۶۵۵۳۵ باشد.",
+      sa_port_off: "پورت سفارشی روی این نمونه فعال نیست.",
       rate_limited: "درخواست‌های بیش از حد — یک دقیقهٔ دیگر تلاش کنید.",
       request_running: "درخواست دیگری از نشانی شما هنوز در حال اجراست.",
       busy: "سرور شلوغ است — کمی بعد دوباره تلاش کنید.",
@@ -186,7 +194,7 @@ function renderServices(d) {
     return [
       { text: r.ip, class: "ltr" },
       { text: r.port, class: "ltr" },
-      r.service || "",
+      r.port === customPort ? (r.service ? r.service + " · " + T("custom") : T("custom")) : (r.service || ""),
       { text: T("st." + r.state) || r.state, class: PORT_CLASS[r.state] || "" },
       r.state === "open" || r.state === "mixed" ? `${r.open_from}/${r.nodes}` : "",
       r.latency_ms ? round(r.latency_ms) : "",
@@ -200,10 +208,23 @@ function renderServices(d) {
 function round(n) { return n == null ? "" : Math.round(n * 10) / 10; }
 
 let running = false;
-async function run(targetText) {
+let customPort = 0; // the extra port of the run being shown, to label its row
+
+// parsePort returns 0 for an empty box, the port for 1..65535, or -1.
+function parsePort(s) {
+  s = s.trim();
+  if (s === "") return 0;
+  if (!/^\d{1,5}$/.test(s)) return -1;
+  const n = Number(s);
+  return n >= 1 && n <= 65535 ? n : -1;
+}
+
+async function run(targetText, port) {
   if (running) return;
+  if (port < 0) { showError(T("badPort")); return; }
   if (!$("authorized").checked) { showError(T("needAuth")); return; }
   running = true;
+  customPort = port;
   showError(""); banner("");
   $("go").disabled = true;
   $("go").lastChild.textContent = T("checking");
@@ -214,7 +235,7 @@ async function run(targetText) {
   stages.replaceChildren();
   const slots = {};
 
-  const url = "/api/server-access?target=" + encodeURIComponent(targetText) + "&authorized=1";
+  const url = "/api/server-access?target=" + encodeURIComponent(targetText) + "&authorized=1" + (port ? "&port=" + port : "");
   try {
     const resp = await fetch(url, { headers: { Accept: "text/event-stream" } });
     if (!resp.ok || !resp.body) {
@@ -263,7 +284,8 @@ function handleEvent(chunk, slots, stages) {
   };
   switch (ev) {
     case "meta":
-      if (d.ports) $("rmeta").textContent = (d.host ? d.host + " · " : "") + "ports " + d.ports.join(", ");
+      customPort = d.custom_port || 0;
+      if (d.ports) $("rmeta").textContent = (d.host ? d.host + " · " : "") + T("portsWord") + " " + d.ports.join(", ");
       break;
     case "identity": if (d.identity) put("identity", renderIdentity(d.identity)); break;
     case "ping": if (d.ping) put("ping", renderPing(d.ping)); break;
@@ -277,7 +299,7 @@ function init() {
   $("form").addEventListener("submit", (e) => {
     e.preventDefault();
     const t = $("target").value.trim();
-    if (t) run(t);
+    if (t) run(t, parsePort($("port").value));
   });
   document.querySelectorAll("[data-lang]").forEach((b) => b.addEventListener("click", () => { lang = b.dataset.lang; applyLang(); applyTheme(); }));
   $("theme").addEventListener("click", () => { theme = theme === "dark" ? "light" : "dark"; applyTheme(); });

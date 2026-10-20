@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -40,13 +41,17 @@ func (reachProber) Probe(_ context.Context, req probe.ProbeRequest) (*probe.Prob
 }
 
 func newSAServer(t *testing.T, ports []int) *httptest.Server {
+	return newSAServerWith(t, serveraccess.Deps{Ports: ports, Now: time.Now, CustomPortAllowed: true})
+}
+
+func newSAServerWith(t *testing.T, sa serveraccess.Deps) *httptest.Server {
 	store, _ := report.OpenStore(t.TempDir(), 10, 24*time.Hour)
 	s := New(Config{
 		Deps:         orchestrator.Deps{DNS: dnsx.New(), RDAP: blockingReg{}},
 		Registry:     nodes.New(nodes.LocalNode("n1", "test", reachProber{})),
 		ClientIP:     clientip.Extractor{Hops: 1},
 		Store:        store,
-		ServerAccess: serveraccess.Deps{Ports: ports, Now: time.Now},
+		ServerAccess: sa,
 	})
 	ts := httptest.NewServer(s.Handler())
 	t.Cleanup(ts.Close)
@@ -106,5 +111,31 @@ func TestServerAccessDisabled(t *testing.T) {
 	code, body := saGet(t, ts.URL+"/api/server-access?target=93.184.215.14&authorized=1", "198.51.100.13")
 	if code != 503 || !strings.Contains(body, "sa_disabled") {
 		t.Errorf("want 503 sa_disabled, got %d %s", code, body)
+	}
+}
+
+func TestServerAccessCustomPort(t *testing.T) {
+	ts := newSAServer(t, []int{80, 443})
+	code, body := saGet(t, ts.URL+"/api/server-access?target=93.184.215.14&authorized=1&port=2053", "198.51.100.20")
+	if code != 200 {
+		t.Fatalf("status %d: %s", code, body)
+	}
+	for _, want := range []string{`"custom_port":2053`, `"ports":[80,443,2053]`, `"port":2053`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("missing %s in stream:\n%s", want, body)
+		}
+	}
+
+	for i, bad := range []string{"abc", "0", "70000", "-5", "1e3"} {
+		code, body := saGet(t, ts.URL+"/api/server-access?target=93.184.215.14&authorized=1&port="+bad, fmt.Sprintf("198.51.100.%d", 21+i))
+		if code != 400 || !strings.Contains(body, "sa_bad_port") {
+			t.Errorf("port=%s: want 400 sa_bad_port, got %d %s", bad, code, body)
+		}
+	}
+
+	off := newSAServerWith(t, serveraccess.Deps{Ports: []int{80, 443}, Now: time.Now})
+	code, body = saGet(t, off.URL+"/api/server-access?target=93.184.215.14&authorized=1&port=2053", "198.51.100.30")
+	if code != 400 || !strings.Contains(body, "sa_port_off") {
+		t.Errorf("custom port disabled: want 400 sa_port_off, got %d %s", code, body)
 	}
 }

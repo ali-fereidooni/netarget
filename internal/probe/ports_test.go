@@ -1,6 +1,11 @@
 package probe
 
-import "testing"
+import (
+	"context"
+	"errors"
+	"net/netip"
+	"testing"
+)
 
 func TestParsePorts(t *testing.T) {
 	cases := []struct {
@@ -53,5 +58,35 @@ func TestLocalPortAllowList(t *testing.T) {
 	l2 := &Local{AllowPorts: map[int]bool{22: true, 8443: true}}
 	if !l2.portAllowed(22) || !l2.portAllowed(8443) || l2.portAllowed(80) {
 		t.Error("explicit allow-list not honored")
+	}
+}
+
+// A probe request may carry at most ExtraPorts ports outside the allow-list.
+// The context is already cancelled, so a request that passes validation stops
+// at the semaphore with ctx.Err() and never touches the network.
+func TestLocalExtraPorts(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	ip := []netip.Addr{netip.MustParseAddr("93.184.215.14")}
+	allow := map[int]bool{22: true, 80: true, 443: true, 8443: true}
+	cases := []struct {
+		name   string
+		extra  int
+		ports  []int
+		reject bool
+	}{
+		{"listed only", 0, []int{22, 80}, false},
+		{"one custom, none allowed", 0, []int{80, 2053}, true},
+		{"one custom, one allowed", 1, []int{22, 80, 443, 8443, 2053}, false},
+		{"two custom, one allowed", 1, []int{80, 2053, 2054}, true},
+		{"out of range", 1, []int{80, 70000}, true},
+		{"zero port", 1, []int{0}, true},
+	}
+	for _, c := range cases {
+		l := &Local{AllowPorts: allow, ExtraPorts: c.extra}
+		_, err := l.Probe(ctx, ProbeRequest{IPs: ip, PingCount: 1, Ports: c.ports})
+		if got := errors.Is(err, ErrInvalidRequest); got != c.reject {
+			t.Errorf("%s: rejected=%v (err %v), want rejected=%v", c.name, got, err, c.reject)
+		}
 	}
 }

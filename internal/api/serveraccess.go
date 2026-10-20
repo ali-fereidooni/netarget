@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"domaindoctor/internal/report"
@@ -36,7 +38,7 @@ func saTargetCode(err error) (code, msg string) {
 // authorized to check the target (authorized=1); every request is audit
 // logged (client IP + target + time), never any secret.
 //
-//	GET /api/server-access?target=<ip|host>&authorized=1
+//	GET /api/server-access?target=<ip|host>&authorized=1[&port=<1-65535>]
 func (s *Server) serverAccess(w http.ResponseWriter, r *http.Request) {
 	ip := s.cfg.ClientIP.Key(r)
 	if !s.general.Allow(ip) {
@@ -60,6 +62,23 @@ func (s *Server) serverAccess(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		code, msg := saTargetCode(err)
 		writeErrCode(w, http.StatusBadRequest, code, msg)
+		return
+	}
+	// Optional operator-typed extra port for this run only.
+	custom := 0
+	if v := strings.TrimSpace(q.Get("port")); v != "" {
+		// A supplied port must be 1..65535; 0 would otherwise read as "none".
+		if custom, err = strconv.Atoi(v); err != nil || custom == 0 {
+			custom = -1 // let WithCustomPort reject it with the range message
+		}
+	}
+	deps, err := s.cfg.ServerAccess.WithCustomPort(custom)
+	if errors.Is(err, serveraccess.ErrCustomPortOff) {
+		writeErrCode(w, http.StatusBadRequest, "sa_port_off", err.Error())
+		return
+	}
+	if err != nil {
+		writeErrCode(w, http.StatusBadRequest, "sa_bad_port", serveraccess.ErrBadPort.Error())
 		return
 	}
 
@@ -89,15 +108,15 @@ func (s *Server) serverAccess(w http.ResponseWriter, r *http.Request) {
 
 	id := report.NewID()
 	// Audit log: who asked, for what, when. No secrets.
-	s.cfg.Log.Printf("server-access %s target=%q from=%s at=%s", id, target.Input, ip, time.Now().UTC().Format(time.RFC3339))
+	s.cfg.Log.Printf("server-access %s target=%q custom_port=%d from=%s at=%s", id, target.Input, custom, ip, time.Now().UTC().Format(time.RFC3339))
 
 	sseHeaders(w)
 	w.WriteHeader(http.StatusOK)
-	sseEvent(w, "meta", map[string]any{"id": id, "target": target.Input, "host": target.Host, "ports": s.cfg.ServerAccess.Ports})
+	sseEvent(w, "meta", map[string]any{"id": id, "target": target.Input, "host": target.Host, "ports": deps.Ports, "custom_port": custom})
 	fl.Flush()
 
 	ns := s.cfg.Registry.Live()
-	serveraccess.Run(ctx, s.cfg.ServerAccess, target, ns, id, func(e serveraccess.Event) {
+	serveraccess.Run(ctx, deps, target, ns, id, func(e serveraccess.Event) {
 		sseEvent(w, e.Type, e)
 		fl.Flush()
 	})

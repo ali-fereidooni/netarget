@@ -23,7 +23,11 @@ type Local struct {
 	// AllowPorts is the TCP port allow-list this node will test. When nil it
 	// falls back to the package default AllowedPorts (80/443). The agent
 	// enforces it itself, so a master cannot make a node test other ports.
-	AllowPorts    map[int]bool
+	AllowPorts map[int]bool
+	// ExtraPorts is how many ports outside AllowPorts one probe request may
+	// include (the server check's operator-typed custom port). 0 = none, so
+	// a node never tests an unlisted port unless configured to.
+	ExtraPorts    int
 	AllowLoopback bool        // tests only
 	PortMap       map[int]int // tests/demo only (with AllowLoopback): logical -> real TCP port
 	// PingFunc and TraceFunc can be replaced in tests.
@@ -81,10 +85,17 @@ func (l *Local) Probe(ctx context.Context, req ProbeRequest) (*ProbeResponse, er
 	if err := l.checkIPs(req.IPs); err != nil {
 		return nil, err
 	}
+	extra := 0
 	for _, p := range req.Ports {
-		if !l.portAllowed(p) && !l.AllowLoopback {
+		if p < 1 || p > 65535 {
 			return nil, ErrInvalidRequest
 		}
+		if !l.portAllowed(p) && !l.AllowLoopback {
+			extra++
+		}
+	}
+	if extra > l.ExtraPorts {
+		return nil, ErrInvalidRequest
 	}
 	if len(req.Ports) > MaxProbePorts {
 		return nil, ErrInvalidRequest
